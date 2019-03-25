@@ -9,7 +9,7 @@ if "%SPHINXBUILD%" == "" (
 )
 set SOURCEDIR=.
 set BUILDDIR=_build
-set SPHINXPROJ=commonlib
+set SPHINXPROJ=apphelpers
 
 if "%1" == "" goto help
 

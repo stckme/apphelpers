@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Tests for `commonlib` package."""
+"""Tests for `apphelpers` package."""
 
 
 import unittest
 
-from commonlib import commonlib
+from apphelpers import apphelpers
 
 
 class TestCommonlib(unittest.TestCase):
-    """Tests for `commonlib` package."""
+    """Tests for `apphelpers` package."""
 
     def setUp(self):
         """Set up test fixtures, if any."""

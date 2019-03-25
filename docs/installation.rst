@@ -12,7 +12,7 @@ To install Common helper libraries for Python Apps, run this command in your ter
 
 .. code-block:: console
 
-    $ pip install commonlib
+    $ pip install apphelpers
 
 This is the preferred method to install Common helper libraries for Python Apps, as it will always install the most recent stable release.
 
@@ -32,13 +32,13 @@ You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/scrolltech/commonlib
+    $ git clone git://github.com/scrolltech/apphelpers
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl  -OL https://github.com/scrolltech/commonlib/tarball/master
+    $ curl  -OL https://github.com/scrolltech/apphelpers/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -47,5 +47,5 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/scrolltech/commonlib
-.. _tarball: https://github.com/scrolltech/commonlib/tarball/master
+.. _Github repo: https://github.com/scrolltech/apphelpers
+.. _tarball: https://github.com/scrolltech/apphelpers/tarball/master
