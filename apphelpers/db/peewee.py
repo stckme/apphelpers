@@ -5,7 +5,7 @@ import os
 from functools import wraps
 from enum import Enum
 
-from peewee import DateTimeField, Model
+from peewee import DateTimeField, Model, Field
 from playhouse.pool import PooledPostgresqlExtDatabase
 from playhouse.shortcuts import model_to_dict
 
@@ -14,6 +14,16 @@ def set_peewee_debug():
     logger = logging.getLogger('peewee')
     logger.addHandler(logging.StreamHandler())
     logger.setLevel(logging.DEBUG)
+
+
+class URLField(Field):
+    field_type = 'text'
+
+    def python_value(self, value):
+        value = value.lower()
+        if not value.startswith('http') or not '://' in value:
+            raise TypeError("Not a http URL: %s" % value)
+        return value
 
 
 def create_pgdb_pool(
