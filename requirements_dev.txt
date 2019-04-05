@@ -9,3 +9,5 @@ twine
 ipython
 nose
 converge
+hug
+peewee
