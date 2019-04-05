@@ -35,7 +35,7 @@ setup(
     include_package_data=True,
     keywords='apphelpers',
     name='apphelpers',
-    packages=find_packages(include=['apphelpers']),
+    packages=find_packages(exclude=['tests']),
     setup_requires=setup_requirements,
     test_suite='tests',
     tests_require=test_requirements,
