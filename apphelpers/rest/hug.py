@@ -1,20 +1,45 @@
 import hug
 
-import apphelpers.context as contextlib
+from falcon import HTTPForbidden
 
 from apphelpers.db.peewee import dbtransaction
 from apphelpers.sessions import SessionDBHandler
-from apphelpers.errors import AccessDenied, InvalidSessionError
 
 
 def phony(f):
     return f
 
 
-def set_context(token):
-    current = {'sid': token}
-    contextlib.set_context(**current)
-    return current
+@hug.directive()
+def user_id(default=None, request=None, **kwargs):
+    return request.context['user'].id
+
+
+def setup_context_setter(sessions):
+
+    def set_context(token):
+        """
+        Only sets context based on session.
+        Does not raise any error
+        """
+        uid, groups = None, []
+
+        if token:
+            try:
+                uid, groups = sessions.sid2uidgroups(sid=token)
+            except InvalidSessionError:
+                pass
+
+        class user:
+            pass
+
+        user.sid = token
+        user.id = uid
+        user.groups = groups
+
+        return user
+
+    return set_context
 
 
 class APIFactory:
@@ -23,7 +48,7 @@ class APIFactory:
         self.router = router
         self.db_tr_wrapper = phony
         self.access_wrapper = phony
-        self.secure_router = router.http(requires=hug.authentication.token(set_context))
+        self.secure_router = None
 
     def setup_db_transaction(self, db):
         self.db_tr_wrapper = dbtransaction(db)
@@ -33,30 +58,28 @@ class APIFactory:
         redis_conn_params: dict() with below keys
                            (host, port, password, db)
         """
-        self.sessions = SessionDBHandler(sessiondb_conn) if sessiondb_conn else None
+        self.sessions = SessionDBHandler(sessiondb_conn)
+        set_context = setup_context_setter(self.sessions)
+        self.secure_router = self.router.http(requires=hug.authentication.token(set_context))
 
         def access_wrapper(f):
+            """
+            This is the authentication + authorization part
+            """
 
             def wrapper(request, *args, **kw):
                 login_required = getattr(f, 'login_required', None)
                 roles_required = getattr(f, 'roles_required', None)
 
-                sid = contextlib.current.sid
-                uid, groups = None, []
+                user = request.context['user']
 
-                if login_required or roles_required:
-                    if sid:
-                        try:
-                            uid, groups = self.sessions.sid2uidgroups(sid)
-                        except InvalidSessionError:
-                            uid, groups = None, []
-                    else:
-                        raise AccessDenied(msg='session not found')
+                # this is authentication part
+                if (login_required or roles_required) and not user.id:
+                    raise HTTPUnauthorized('Invalid or expired session')
 
-                contextlib.set_context(sid=sid, uid=uid, groups=groups)
-
-                if roles_required and not set(contextlib.current.groups).intersection(roles_required):
-                    raise AccessDenied(data=dict(groups=groups, roles_required=roles_required))
+                # this is authorization part
+                if roles_required and not set(user.groups).intersection(roles_required):
+                    raise HTTPForbidden('Unauthorized access')
 
                 return f(*args, **kw)
 
@@ -68,33 +91,34 @@ class APIFactory:
         login_required = hasattr(f, 'login_required') and f.login_required
         return self.secure_router if login_required else self.router
 
-    def build(self, f):
-        for attr in ('login_required', 'roles_required'):
-            print(f.__name__, ':', attr, ': ', getattr(f, attr, None))
-        return self.access_wrapper(self.db_tr_wrapper(f))
+    def build(self, method, method_args, method_kw, f):
+        print(f'{method_args[0]} [{method.__name__.upper()}] => {f.__module__}:{f.__name__}')
+        m = method(*method_args, **method_kw)
+        f = self.access_wrapper(self.db_tr_wrapper(f))
+        return m(f)
 
     def get(self, *a, **k):
         def _wrapper(f):
             router = self.choose_router(f)
-            return router.get(*a, **k)(self.build(f))
+            return self.build(router.get, a, k, f)
         return _wrapper
 
     def post(self, *a, **k):
         def _wrapper(f):
             router = self.choose_router(f)
-            return router.post(*a, **k)(self.build(f))
+            return self.build(router.post, a, k, f)
         return _wrapper
 
     def patch(self, *a, **k):
         def _wrapper(f):
             router = self.choose_router(f)
-            return router.patch(*a, **k)(self.build(f))
+            return self.build(router.patch, a, k, f)
         return _wrapper
 
     def delete(self, *a, **k):
         def _wrapper(f):
             router = self.choose_router(f)
-            return router.delete(*a, **k)(self.build(f))
+            return self.build(router.delete, a, k, f)
         return _wrapper
 
     def map_resource(self, url, resource=None, handlers=None, id_field='id'):
