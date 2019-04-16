@@ -1,8 +1,9 @@
 import hug
 
-from falcon import HTTPForbidden
+from falcon import HTTPUnauthorized, HTTPForbidden
 
 from apphelpers.db.peewee import dbtransaction
+from apphelpers.errors import InvalidSessionError
 from apphelpers.sessions import SessionDBHandler
 
 
@@ -66,22 +67,27 @@ class APIFactory:
             """
             This is the authentication + authorization part
             """
+            login_required = getattr(f, 'login_required', None)
+            roles_required = getattr(f, 'roles_required', None)
 
-            def wrapper(request, *args, **kw):
-                login_required = getattr(f, 'login_required', None)
-                roles_required = getattr(f, 'roles_required', None)
+            if login_required or roles_required:
 
-                user = request.context['user']
+                def wrapper(request, *args, **kw):
 
-                # this is authentication part
-                if (login_required or roles_required) and not user.id:
-                    raise HTTPUnauthorized('Invalid or expired session')
+                    user = request.context['user']
 
-                # this is authorization part
-                if roles_required and not set(user.groups).intersection(roles_required):
-                    raise HTTPForbidden('Unauthorized access')
+                    # this is authentication part
+                    if (login_required or roles_required) and not user.id:
+                        raise HTTPUnauthorized('Invalid or expired session')
 
-                return f(*args, **kw)
+                    # this is authorization part
+                    if roles_required and not set(user.groups).intersection(roles_required):
+                        raise HTTPForbidden('Unauthorized access')
+
+                    return f(*args, **kw)
+            else:
+
+                wrapper = f
 
             return wrapper
 
