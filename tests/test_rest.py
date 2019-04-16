@@ -1,8 +1,14 @@
+import os
 import requests
+import time
 
 echo_url = 'http://127.0.0.1:8000/echo'
 secure_echo_url = 'http://127.0.0.1:8000/secure-echo'
 
+
+def test_setup():
+    os.system('hug -f tests/service.py &')
+    time.sleep(2)
 
 def test_get():
     word = 'hello'
