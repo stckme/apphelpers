@@ -10,4 +10,5 @@ ipython
 nose
 converge
 hug
+psycopg2
 peewee
