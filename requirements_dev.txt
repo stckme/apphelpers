@@ -12,3 +12,4 @@ converge
 hug
 psycopg2
 peewee
+redis
