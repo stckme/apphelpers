@@ -3,6 +3,7 @@
 language: python
 services:
   - postgresql
+  - redis
 matrix:
     include:
       - python: 3.5
