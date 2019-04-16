@@ -3,7 +3,7 @@ from peewee import TextField
 
 import settings
 
-db = create_pgdb_pool(database=settings.DB_NAME)
+db = create_pgdb_pool(database=settings.DB_NAME, user=settings.DB_USER)
 BaseModel = create_base_model(db)
 dbtransaction = dbtransaction(db)
 
