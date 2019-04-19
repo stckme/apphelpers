@@ -3,7 +3,7 @@ import requests
 import time
 
 base_url = 'http://127.0.0.1:8000/'
-echo_url = base_url + '/echo'
+echo_url = base_url + 'echo'
 secure_echo_url = base_url + 'secure-echo'
 pid_path = 'tests/run/app.pid'
 
@@ -14,8 +14,8 @@ def setup_module():
     cmd = f'gunicorn tests.service:__hug_wsgi__  -p {pid_path} -D'
     os.system(cmd)
     for i in range(10):
-        time.sleep(1)
         if os.path.exists(pid_path):
+            time.sleep(2)
             break
 
 
