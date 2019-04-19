@@ -13,3 +13,4 @@ hug
 psycopg2
 peewee
 redis
+gunicorn
