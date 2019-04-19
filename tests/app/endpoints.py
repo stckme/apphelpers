@@ -1,11 +1,20 @@
+import hug
+
+
 def echo(word):
     return word
+
+
+def add(nums: hug.types.multiple):
+    return sum(int(x) for x in nums)
 
 
 def setup_routes(factory):
 
     factory.get('/echo/{word}')(echo)
     factory.post('/echo')(echo)
+
+    factory.get('/add')(add)
 
     echo.login_required = True
     factory.get('/secure-echo/{word}')(echo)
