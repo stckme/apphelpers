@@ -1,3 +1,4 @@
+import secrets
 import _pickle as pickle
 import redis
 
@@ -21,12 +22,30 @@ class SessionDBHandler:
         """
         self.rconn = redis.Redis(**rconn_params)
 
-    def create(self, id='', groups=None, extras=None, ttl=(30 * 24 * 60 * 60)):
+    def create(self, uid='', groups=None, extras=None, ttl=(30 * 24 * 60 * 60)):
         """
         groups: list
         extras (dict): each key-value pair of extras get stored into hset
         """
-        raise NotImplementedError
+        if uid:
+            sid = self.uid2sid(uid)
+            if sid:
+                return sid
+
+        sid = self.generate_sid()
+        key = session_key(sid)
+
+        session_dict = {'uid': uid, 'groups': groups or []}
+        if extras:
+            session_dict.update(extras)
+        session = {k: pickle.dumps(v) for k, v in session_dict.items()}
+        self.rconn.hmset(key, session)
+
+        if uid:
+            rev_key = rev_lookup_key(uid)
+            self.rconn.setex(rev_key, value=sid, time=ttl)
+        self.rconn.expire(key, ttl)
+        return sid
 
     def exists(self, sid):
         return self.rconn.exists(session_key(sid))
@@ -43,6 +62,9 @@ class SessionDBHandler:
     def get_attribute(self, sid, attribute):
         value = self.rconn.hget(session_key(sid), attribute)
         return pickle.loads(value) if value else None
+
+    def generate_sid(self):
+        return secrets.token_urlsafe()
 
     def uid2sid(self, uid):
         sid = self.rconn.get(rev_lookup_key(uid))
@@ -94,4 +116,3 @@ class SessionDBHandler:
         self.rconn.delete(*keys)
         keys = self.rconn.keys(rev_lookup_prefix + '*')
         self.rconn.delete(*keys)
-
