@@ -11,11 +11,15 @@ matrix:
 
 install:
   - pip install -U tox-travis coveralls
+  - pip install -r requirements_dev.txt
 
 before_script:
   - psql -c 'create database defaultdb;' -U postgres
+  - gunicorn tests.service:__hug_wsgi__  -p tests/run/app.pid -D
+  - sleep 2
 
 script: tox
 
 after_success:
+  - kill -9 `cat tests/run/app/pid`
   - coveralls
