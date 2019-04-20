@@ -15,7 +15,8 @@ install:
 
 before_script:
   - psql -c 'create database defaultdb;' -U postgres
-  - gunicorn tests.service:__hug_wsgi__ -b 127.0.0.1:9001  -p tests/run/app.pid -D
+  # - gunicorn tests.service:__hug_wsgi__ -b 127.0.0.1:9001  -p tests/run/app.pid -D
+  - hug -f tests/service.py &
   - sleep 10
 
 script: tox
