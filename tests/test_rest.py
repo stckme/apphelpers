@@ -17,6 +17,7 @@ def setup_module():
         if os.path.exists(pid_path):
             time.sleep(2)
             break
+    time.sleep(5)  # are tests failing because requests starting too soon?
 
 
 def teardown_module():
