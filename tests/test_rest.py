@@ -8,7 +8,7 @@ secure_echo_url = base_url + 'secure-echo'
 pid_path = 'tests/run/app.pid'
 
 
-def _setup_module():
+def gunicorn_setup_module():  # not working
     if os.path.exists(pid_path):
         os.remove(pid_path)
     cmd = f'gunicorn tests.service:__hug_wsgi__  -p {pid_path} -D'
@@ -17,10 +17,9 @@ def _setup_module():
         if os.path.exists(pid_path):
             time.sleep(2)
             break
-    time.sleep(5)  # are tests failing because requests starting too soon?
 
 
-def _teardown_module():
+def gunicorn_teardown_module():
     if os.path.exists(pid_path):
         cmd = f'kill -9 `cat {pid_path}`'
         os.system(cmd)
