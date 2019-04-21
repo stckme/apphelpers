@@ -32,7 +32,7 @@ class SessionDBHandler:
             if sid:
                 return sid
 
-        sid = self.generate_sid()
+        sid = secrets.token_urlsafe()
         key = session_key(sid)
 
         session_dict = {'uid': uid, 'groups': groups or []}
@@ -62,9 +62,6 @@ class SessionDBHandler:
     def get_attribute(self, sid, attribute):
         value = self.rconn.hget(session_key(sid), attribute)
         return pickle.loads(value) if value else None
-
-    def generate_sid(self):
-        return secrets.token_urlsafe()
 
     def uid2sid(self, uid):
         sid = self.rconn.get(rev_lookup_key(uid))
