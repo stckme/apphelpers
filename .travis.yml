@@ -11,9 +11,12 @@ matrix:
 
 install:
   - pip install -U tox-travis coveralls
+  - pip install -r requirements_dev.txt
 
 before_script:
   - psql -c 'create database defaultdb;' -U postgres
+  - hug -f tests/service.py &
+  - sleep 2
 
 script: tox
 

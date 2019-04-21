@@ -2,13 +2,13 @@ import os
 import requests
 import time
 
-base_url = 'http://0.0.0.0:8000/'
+base_url = 'http://127.0.0.1:8000/'
 echo_url = base_url + 'echo'
 secure_echo_url = base_url + 'secure-echo'
 pid_path = 'tests/run/app.pid'
 
 
-def setup_module():
+def gunicorn_setup_module():  # not working
     if os.path.exists(pid_path):
         os.remove(pid_path)
     cmd = f'gunicorn tests.service:__hug_wsgi__  -p {pid_path} -D'
@@ -19,7 +19,7 @@ def setup_module():
             break
 
 
-def teardown_module():
+def gunicorn_teardown_module():
     if os.path.exists(pid_path):
         cmd = f'kill -9 `cat {pid_path}`'
         os.system(cmd)
