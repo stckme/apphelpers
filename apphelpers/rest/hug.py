@@ -1,5 +1,6 @@
 import hug
 
+from functools import wraps
 from falcon import HTTPUnauthorized, HTTPForbidden
 
 from apphelpers.db.peewee import dbtransaction
@@ -72,6 +73,7 @@ class APIFactory:
 
             if login_required or roles_required:
 
+                @wraps(f)
                 def wrapper(request, *args, **kw):
 
                     user = request.context['user']
