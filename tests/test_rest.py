@@ -2,10 +2,20 @@ import os
 import requests
 import time
 
+import apphelpers.sessions as sessionslib
+
+from converge import settings
+
 base_url = 'http://127.0.0.1:8000/'
 echo_url = base_url + 'echo'
 secure_echo_url = base_url + 'secure-echo'
 pid_path = 'tests/run/app.pid'
+
+sessiondb_conn = dict(host=settings.SESSIONSDB_HOST,
+                      port=settings.SESSIONSDB_PORT,
+                      password=settings.SESSIONSDB_PASSWD,
+                      db=settings.SESSIONSDB_NO)
+sessionsdb = sessionslib.SessionDBHandler(sessiondb_conn)
 
 
 def gunicorn_setup_module():  # not working
@@ -53,7 +63,28 @@ def test_post():
 
 def test_secure_echo():
     word = 'hello'
-    headers = {'Authorization': 'Invalid session id'}
+    headers = {'No Authorization': 'Header'}
     url = secure_echo_url + '/' + word
     resp = requests.get(url, headers=headers)
     assert resp.status_code == 401
+
+
+def test_user_id():
+    uid = 101
+    d = dict(uid=uid, groups=[])
+    sid = sessionsdb.create(**d)
+
+    headers = {'Authorization': sid}
+    url = base_url + 'me/uid'
+
+    data = {'uid': None}
+    resp = requests.post(url, json=data, headers=headers)
+    assert resp.json() == uid
+
+    data = {'uid': 1}  # invalid claim
+    resp = requests.post(url, json=data, headers=headers)
+    assert resp.json() == uid
+
+    data = {'uid': uid}
+    resp = requests.post(url, json=data, headers=headers)
+    assert resp.json() == uid
