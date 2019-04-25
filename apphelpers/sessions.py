@@ -1,6 +1,7 @@
 import secrets
 import _pickle as pickle
 import redis
+import hug
 
 import apphelpers.context as context
 
@@ -113,3 +114,8 @@ class SessionDBHandler:
         self.rconn.delete(*keys)
         keys = self.rconn.keys(rev_lookup_prefix + '*')
         self.rconn.delete(*keys)
+
+
+def whoami(user: hug.directives.user):
+    return user.to_dict()
+#whoami.login_required = True

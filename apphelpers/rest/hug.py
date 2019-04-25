@@ -1,7 +1,8 @@
-import hug
-
+from dataclasses import dataclass, asdict
 from functools import wraps
 from falcon import HTTPUnauthorized, HTTPForbidden
+
+import hug
 
 from apphelpers.db.peewee import dbtransaction
 from apphelpers.errors import InvalidSessionError
@@ -15,6 +16,16 @@ def phony(f):
 @hug.directive()
 def user_id(default=None, request=None, **kwargs):
     return request.context['user'].id
+
+
+@dataclass
+class User:
+    sid: str=None
+    id: int=None
+    groups: tuple=()
+
+    def to_dict(self):
+        return asdict(self)
 
 
 def setup_context_setter(sessions):
@@ -32,14 +43,8 @@ def setup_context_setter(sessions):
             except InvalidSessionError:
                 pass
 
-        class user:
-            pass
 
-        user.sid = token
-        user.id = uid
-        user.groups = groups
-
-        return user
+        return User(sid=token, id=uid, groups=groups)
 
     return set_context
 
