@@ -118,4 +118,4 @@ class SessionDBHandler:
 
 def whoami(user: hug.directives.user):
     return user.to_dict()
-#whoami.login_required = True
+whoami.login_required = True
