@@ -11,7 +11,7 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = open('requirements.txt').read().split()
+requirements = open('requirements_dev.txt').read().split()
 
 setup_requirements = [ ]
 
