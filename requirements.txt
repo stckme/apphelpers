@@ -1,0 +1,16 @@
+pip
+bumpversion
+wheel
+watchdog
+flake8
+coverage
+Sphinx
+twine
+ipython
+nose
+converge
+hug
+psycopg2
+peewee
+redis
+gunicorn
