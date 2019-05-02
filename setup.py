@@ -3,6 +3,7 @@
 
 """The setup script."""
 
+from os.path import abspath
 from setuptools import setup, find_packages
 
 with open('README.rst') as readme_file:
@@ -11,7 +12,7 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = open('requirements.txt').read().split()
+requirements = open(abspath('requirements.txt')).read().split()
 
 setup_requirements = [ ]
 
