@@ -18,10 +18,16 @@ def user_id(default=None, request=None, **kwargs):
     return request.context['user'].id
 
 
+@hug.directive()
+def user_name(default=None, request=None, **kwargs):
+    return request.context['user'].name
+
+
 @dataclass
 class User:
     sid: str=None
     id: int=None
+    name: str=None
     groups: tuple=()
 
     def to_dict(self):
@@ -39,12 +45,12 @@ def setup_context_setter(sessions):
 
         if token:
             try:
-                uid, groups = sessions.sid2uidgroups(sid=token)
+                session = sessions.get(sid=token, ['uid', 'name', 'groups'])
+                uid, name, groups = session['uid'], session['name'], session['groups']
             except InvalidSessionError:
                 pass
 
-
-        return User(sid=token, id=uid, groups=groups)
+        return User(sid=token, id=uid, name=name, groups=groups)
 
     return set_context
 
