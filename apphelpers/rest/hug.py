@@ -45,7 +45,7 @@ def setup_context_setter(sessions):
 
         if token:
             try:
-                session = sessions.get(sid=token, keys=['uid', 'name', 'groups'])
+                session = sessions.get(token, ['uid', 'name', 'groups'])
                 uid, name, groups = session['uid'], session['name'], session['groups']
             except InvalidSessionError:
                 pass
