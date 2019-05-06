@@ -15,7 +15,7 @@ install:
 
 before_script:
   - psql -c 'create database defaultdb;' -U postgres
-  - hug -f tests/service.py &> /tmp/service.out
+  - hug -f tests/service.py &> /tmp/service.out || true
   - sleep 2
   - cat /tmp/service.out
 
