@@ -1,5 +1,6 @@
 # Config file for automatic testing at travis-ci.org
 
+dist: xenial
 language: python
 services:
   - postgresql
@@ -10,13 +11,14 @@ matrix:
         env: TOXENV=py36
 
 install:
-  - pip install -U tox-travis coveralls
+  - pip install -U tox-travis coveralls dataclasses
   - pip install -r requirements_dev.txt
 
 before_script:
   - psql -c 'create database defaultdb;' -U postgres
-  - hug -f tests/service.py &
+  - hug -f tests/service.py &> /tmp/service.out || true
   - sleep 2
+  - cat /tmp/service.out
 
 script: tox
 
