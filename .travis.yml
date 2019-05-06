@@ -6,6 +6,7 @@ services:
   - redis-server
 matrix:
     include:
+      - dist: xenial
       - python: 3.6
         env: TOXENV=py36
 
