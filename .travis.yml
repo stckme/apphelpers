@@ -11,7 +11,7 @@ matrix:
         env: TOXENV=py36
 
 install:
-  - pip install -U tox-travis coveralls
+  - pip install -U tox-travis coveralls dataclasses
   - pip install -r requirements_dev.txt
 
 before_script:
