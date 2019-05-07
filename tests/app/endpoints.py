@@ -1,9 +1,15 @@
 import hug
+import hug.directives
 
 from apphelpers.rest.hug import user_id
 
-def echo(word):
-    return word
+def echo(word, user: hug.directives.user=None):
+    return '%s:%s' % (user.id, word) if user else word
+
+
+def secure_echo(word, user: hug.directives.user=None):
+    return '%s:%s' % (user.id, word) if user else word
+secure_echo.login_required = True
 
 
 def add(nums: hug.types.multiple):
@@ -22,8 +28,7 @@ def setup_routes(factory):
 
     factory.get('/add')(add)
 
-    echo.login_required = True
-    factory.get('/secure-echo/{word}')(echo)
+    factory.get('/secure-echo/{word}')(secure_echo)
 
     factory.post('/me/uid')(get_my_uid)
 

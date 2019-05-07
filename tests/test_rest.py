@@ -63,7 +63,7 @@ def test_post():
 
 def test_secure_echo():
     word = 'hello'
-    headers = {'No Authorization': 'Header'}
+    headers = {'NoAuthorization': 'Header'}
     url = secure_echo_url + '/' + word
     resp = requests.get(url, headers=headers)
     assert resp.status_code == 401
@@ -75,6 +75,11 @@ def test_user_id():
     sid = sessionsdb.create(**d)
 
     headers = {'Authorization': sid}
+
+    word = 'hello'
+    url = echo_url + '/' + word
+    assert requests.get(url, headers=headers).json() == ('%s:%s' % (uid, word))
+
     url = base_url + 'me/uid'
 
     data = {'uid': None}
