@@ -34,14 +34,33 @@ class User:
         return asdict(self)
 
 
-def setup_context_setter(sessions):
+def setup_strict_context_setter(sessions):
 
     def set_context(token):
+
+        uid, groups, name = None, [], ''
+
+        if token:
+            try:
+                session = sessions.get(token, ['uid', 'name', 'groups'])
+                uid, name, groups = session['uid'], session['name'], session['groups']
+            except InvalidSessionError:
+                raise HTTPUnauthorized('Invalid or expired session')
+
+        return User(sid=token, id=uid, name=name, groups=groups)
+
+    return set_context
+
+
+def setup_context_setter(sessions):
+
+    def set_context(response, request, context, module):
         """
         Only sets context based on session.
         Does not raise any error
         """
-        uid, groups = None, []
+        uid, groups, name = None, [], ''
+        token = request.get_header('Authorization')
 
         if token:
             try:
@@ -50,7 +69,7 @@ def setup_context_setter(sessions):
             except InvalidSessionError:
                 pass
 
-        return User(sid=token, id=uid, name=name, groups=groups)
+            request.context['user'] = User(sid=token, id=uid, name=name, groups=groups)
 
     return set_context
 
@@ -58,7 +77,7 @@ def setup_context_setter(sessions):
 class APIFactory:
 
     def __init__(self, router):
-        self.router = router
+        self._router = router
         self.db_tr_wrapper = phony
         self.access_wrapper = phony
         self.secure_router = None
@@ -73,6 +92,8 @@ class APIFactory:
         """
         self.sessions = SessionDBHandler(sessiondb_conn)
         set_context = setup_context_setter(self.sessions)
+        self.router = self._router.http(requires=set_context)
+        set_context = setup_strict_context_setter(self.sessions)
         self.secure_router = self.router.http(requires=hug.authentication.token(set_context))
 
         def access_wrapper(f):
