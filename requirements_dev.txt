@@ -5,7 +5,7 @@ watchdog
 flake8
 coverage
 Sphinx
-twine
+twine==1.13.0
 ipython
 nose
 converge
