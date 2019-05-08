@@ -13,4 +13,4 @@ hug
 psycopg2
 peewee
 redis
-gunicorn
+gunicorn==19.9.0
