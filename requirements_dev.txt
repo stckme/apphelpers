@@ -10,7 +10,7 @@ ipython
 nose
 converge
 hug
-psycopg2
+psycopg2==2.8.2
 peewee
 redis
 gunicorn
