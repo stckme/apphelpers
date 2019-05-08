@@ -12,5 +12,5 @@ converge
 hug
 psycopg2
 peewee
-redis
+redis==3.2.1
 gunicorn
