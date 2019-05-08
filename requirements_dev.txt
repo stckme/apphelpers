@@ -9,7 +9,7 @@ twine
 ipython
 nose
 converge
-hug
+hug==2.5.0
 psycopg2
 peewee
 redis
