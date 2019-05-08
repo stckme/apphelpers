@@ -3,7 +3,7 @@ bumpversion
 wheel
 watchdog
 flake8
-coverage
+coverage==4.5.3
 Sphinx
 twine
 ipython
