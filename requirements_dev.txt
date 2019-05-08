@@ -8,7 +8,7 @@ Sphinx
 twine
 ipython
 nose
-converge
+converge==0.9.8
 hug
 psycopg2
 peewee
