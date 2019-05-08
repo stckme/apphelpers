@@ -11,6 +11,6 @@ nose
 converge
 hug
 psycopg2
-peewee
+peewee==3.9.5
 redis
 gunicorn
