@@ -6,7 +6,7 @@ flake8
 coverage
 Sphinx
 twine
-ipython
+ipython==7.5.0
 nose
 converge
 hug
