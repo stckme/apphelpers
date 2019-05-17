@@ -69,7 +69,7 @@ def setup_context_setter(sessions):
             except InvalidSessionError:
                 pass
 
-            request.context['user'] = User(sid=token, id=uid, name=name, groups=groups)
+        request.context['user'] = User(sid=token, id=uid, name=name, groups=groups)
 
     return set_context
 
