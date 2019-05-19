@@ -9,6 +9,7 @@ from converge import settings
 base_url = 'http://127.0.0.1:8000/'
 echo_url = base_url + 'echo'
 secure_echo_url = base_url + 'secure-echo'
+echo_groups_url = base_url + 'echo-groups'
 pid_path = 'tests/run/app.pid'
 
 sessiondb_conn = dict(host=settings.SESSIONSDB_HOST,
@@ -93,3 +94,35 @@ def test_user_id():
     data = {'uid': uid}
     resp = requests.post(url, json=data, headers=headers)
     assert resp.json() == uid
+
+
+def test_group_access():
+    # 1. No group
+    uid = 111
+    groups = []
+    d = dict(uid=uid, groups=groups)
+    sid = sessionsdb.create(**d)
+    url = echo_groups_url
+
+    headers = {'Authorization': sid}
+    assert requests.get(url, headers=headers).status_code == 403
+
+    # 2. Forbidden group
+    uid = 112
+    groups = ['noaccess-group']
+    d = dict(uid=uid, groups=groups)
+    sid = sessionsdb.create(**d)
+    url = echo_groups_url
+
+    headers = {'Authorization': sid}
+    assert requests.get(url, headers=headers).status_code == 403
+
+    # 3. Access group
+    uid = 113
+    groups = ['access-group']
+    d = dict(uid=uid, groups=groups)
+    sid = sessionsdb.create(**d)
+
+    headers = {'Authorization': sid}
+    assert requests.get(url, headers=headers).status_code == 200
+    assert requests.get(url, headers=headers).json() == groups

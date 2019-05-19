@@ -33,6 +33,9 @@ class User:
     def to_dict(self):
         return asdict(self)
 
+    def __bool__(self):
+        return bool(self.id)
+
 
 def setup_strict_context_setter(sessions):
 
@@ -102,6 +105,7 @@ class APIFactory:
             """
             login_required = getattr(f, 'login_required', None)
             roles_required = getattr(f, 'roles_required', None)
+            roles_forbidden = getattr(f, 'roles_forbidden', None)
 
             if login_required or roles_required:
 
@@ -115,7 +119,12 @@ class APIFactory:
                         raise HTTPUnauthorized('Invalid or expired session')
 
                     # this is authorization part
-                    if roles_required and not set(user.groups).intersection(roles_required):
+                    groups = set(user.groups)
+
+                    if roles_required and not groups.intersection(roles_required):
+                        raise HTTPForbidden('Unauthorized access')
+
+                    if roles_forbidden and groups.intersection(roles_forbidden):
                         raise HTTPForbidden('Unauthorized access')
 
                     return f(*args, **kw)

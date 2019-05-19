@@ -12,6 +12,12 @@ def secure_echo(word, user: hug.directives.user=None):
 secure_echo.login_required = True
 
 
+def echo_groups(user: hug.directives.user=None):
+    return user.groups
+echo_groups.roles_required = ['access-group']
+echo_groups.roles_forbidden = ['forbidden-group']
+
+
 def add(nums: hug.types.multiple):
     return sum(int(x) for x in nums)
 
@@ -29,11 +35,9 @@ def setup_routes(factory):
     factory.get('/add')(add)
 
     factory.get('/secure-echo/{word}')(secure_echo)
+    factory.get('/echo-groups')(echo_groups)
 
     factory.post('/me/uid')(get_my_uid)
-
-    # echo.roles_required = []
-    # factory.get('/roles-echo/{word}')(echo)
 
     # ar_handlers = (None, arlib.create, None, arlib.get, arlib.update, None)
     # factory.map_resource('/resttest/', handlers=ar_handlers)
