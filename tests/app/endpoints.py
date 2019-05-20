@@ -14,8 +14,8 @@ secure_echo.login_required = True
 
 def echo_groups(user: hug.directives.user=None):
     return user.groups
-echo_groups.roles_required = ['access-group']
-echo_groups.roles_forbidden = ['forbidden-group']
+echo_groups.groups_required = ['access-group']
+echo_groups.groups_forbidden = ['forbidden-group']
 
 
 def add(nums: hug.types.multiple):
@@ -25,6 +25,11 @@ def add(nums: hug.types.multiple):
 def get_my_uid(uid: user_id):
     return uid
 get_my_uid.login_required = True
+
+
+def get_snake(name):
+    return None
+get_snake.not_found_on_none = True
 
 
 def setup_routes(factory):
@@ -38,6 +43,8 @@ def setup_routes(factory):
     factory.get('/echo-groups')(echo_groups)
 
     factory.post('/me/uid')(get_my_uid)
+
+    factory.get('/snakes/{name}')(get_snake)
 
     # ar_handlers = (None, arlib.create, None, arlib.get, arlib.update, None)
     # factory.map_resource('/resttest/', handlers=ar_handlers)

@@ -1,6 +1,6 @@
 from dataclasses import dataclass, asdict
 from functools import wraps
-from falcon import HTTPUnauthorized, HTTPForbidden
+from falcon import HTTPUnauthorized, HTTPForbidden, HTTPNotFound
 
 import hug
 
@@ -10,6 +10,18 @@ from apphelpers.sessions import SessionDBHandler
 
 
 def phony(f):
+    return f
+
+
+def raise_not_found_on_none(f):
+    if getattr(f, 'not_found_on_none', None) == True:
+        @wraps(f)
+        def wrapper(*a, **k):
+            ret = f(*a, **k)
+            if ret is None:
+                raise HTTPNotFound('four o four')
+            return ret
+        return wrapper
     return f
 
 
@@ -143,7 +155,7 @@ class APIFactory:
     def build(self, method, method_args, method_kw, f):
         print(f'{method_args[0]} [{method.__name__.upper()}] => {f.__module__}:{f.__name__}')
         m = method(*method_args, **method_kw)
-        f = self.access_wrapper(self.db_tr_wrapper(f))
+        f = raise_not_found_on_none(self.access_wrapper(self.db_tr_wrapper(f)))
         return m(f)
 
     def get(self, *a, **k):

@@ -126,3 +126,7 @@ def test_group_access():
     headers = {'Authorization': sid}
     assert requests.get(url, headers=headers).status_code == 200
     assert requests.get(url, headers=headers).json() == groups
+
+def test_not_found():
+    url = base_url + 'snakes/viper'
+    assert requests.get(url).status_code == 404
