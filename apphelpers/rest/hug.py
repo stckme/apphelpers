@@ -107,7 +107,7 @@ class APIFactory:
             roles_required = getattr(f, 'roles_required', None)
             roles_forbidden = getattr(f, 'roles_forbidden', None)
 
-            if login_required or roles_required:
+            if login_required or roles_required or roles_forbidden:
 
                 @wraps(f)
                 def wrapper(request, *args, **kw):
@@ -115,7 +115,7 @@ class APIFactory:
                     user = request.context['user']
 
                     # this is authentication part
-                    if (login_required or roles_required) and not user.id:
+                    if not user.id:
                         raise HTTPUnauthorized('Invalid or expired session')
 
                     # this is authorization part
