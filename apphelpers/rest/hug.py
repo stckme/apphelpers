@@ -36,12 +36,14 @@ def setup_context_setter(sessions):
         Does not raise any error
         """
         uid, groups = None, []
+        token = request.get_header('Authorization')
 
         if token:
             try:
-                uid, groups = sessions.sid2uidgroups(sid=token)
+                session = sessions.get(token, ['uid', 'name', 'groups'])
+                uid, name, groups = session['uid'], session['name'], session['groups']
             except InvalidSessionError:
-                pass
+                return HTTPUnauthorized('Invalid or expired session')
 
 
         return User(sid=token, id=uid, groups=groups)
