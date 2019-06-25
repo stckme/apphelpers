@@ -1,3 +1,4 @@
+import pytz
 import datetime
 import logging
 import os
@@ -5,9 +6,10 @@ import os
 from functools import wraps
 from enum import Enum
 
-from peewee import DateTimeField, Model, Field
+from peewee import Model, Field
 from playhouse.pool import PooledPostgresqlExtDatabase
 from playhouse.shortcuts import model_to_dict
+from playhouse.postgres_ext import DateTimeTZField
 
 
 def set_peewee_debug():
@@ -53,7 +55,7 @@ def create_base_model(db):
     return BaseModel
 
 
-created = lambda: DateTimeField(default=datetime.datetime.utcnow)
+created = lambda: DateTimeTZField(default=lambda: datetime.datetime.now(pytz.utc))
 
 
 def dbtransaction(db):
