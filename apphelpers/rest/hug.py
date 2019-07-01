@@ -35,12 +35,18 @@ def user_name(default=None, request=None, **kwargs):
     return request.context['user'].name
 
 
+@hug.directive()
+def user_email(default=None, request=None, **kwargs):
+    return request.context['user'].email
+
+
 @dataclass
 class User:
     sid: str=None
     id: int=None
     name: str=None
     groups: tuple=()
+    email: str=None
 
     def to_dict(self):
         return asdict(self)
@@ -57,12 +63,12 @@ def setup_strict_context_setter(sessions):
 
         if token:
             try:
-                session = sessions.get(token, ['uid', 'name', 'groups'])
-                uid, name, groups = session['uid'], session['name'], session['groups']
+                session = sessions.get(token, ['uid', 'name', 'groups', 'email'])
+                uid, name, groups, email = session['uid'], session['name'], session['groups'], session['email']
             except InvalidSessionError:
                 raise HTTPUnauthorized('Invalid or expired session')
 
-        return User(sid=token, id=uid, name=name, groups=groups)
+        return User(sid=token, id=uid, name=name, groups=groups, email=email)
 
     return set_context
 
