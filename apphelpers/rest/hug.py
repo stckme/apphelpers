@@ -59,7 +59,7 @@ def setup_strict_context_setter(sessions):
 
     def set_context(token):
 
-        uid, groups, name = None, [], ''
+        uid, groups, name, email = None, [], '', None
 
         if token:
             try:
@@ -80,17 +80,17 @@ def setup_context_setter(sessions):
         Only sets context based on session.
         Does not raise any error
         """
-        uid, groups, name = None, [], ''
+        uid, groups, name, email = None, [], '', None
         token = request.get_header('Authorization')
 
         if token:
             try:
-                session = sessions.get(token, ['uid', 'name', 'groups'])
-                uid, name, groups = session['uid'], session['name'], session['groups']
+                session = sessions.get(token, ['uid', 'name', 'groups', 'email'])
+                uid, name, groups, email = session['uid'], session['name'], session['groups'], session['email']
             except InvalidSessionError:
                 pass
 
-        request.context['user'] = User(sid=token, id=uid, name=name, groups=groups)
+        request.context['user'] = User(sid=token, id=uid, name=name, groups=groups, email=email)
 
     return set_context
 
