@@ -47,7 +47,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Common helper libraries for Python Apps'
+project = u'Apphelpers'
 copyright = u"2019, Scroll Tech"
 author = u"Scroll Tech"
 
