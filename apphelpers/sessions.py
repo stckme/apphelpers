@@ -111,9 +111,11 @@ class SessionDBHandler:
 
     def destroy_all(self):
         keys = self.rconn.keys(session_key('*'))
-        self.rconn.delete(*keys)
+        if keys:
+            self.rconn.delete(*keys)
         keys = self.rconn.keys(rev_lookup_prefix + '*')
-        self.rconn.delete(*keys)
+        if keys:
+            self.rconn.delete(*keys)
 
 
 def whoami(user: hug.directives.user):
