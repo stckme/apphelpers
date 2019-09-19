@@ -32,6 +32,11 @@ def get_snake(name):
 get_snake.not_found_on_none = True
 
 
+def echo_tenent_groups(tenent_id, user: hug.directives.user=None):
+    return user.groups
+echo_tenent_groups.groups_required = ['{tenent_id}:access-group']
+
+
 def setup_routes(factory):
 
     factory.get('/echo/{word}')(echo)
@@ -45,6 +50,8 @@ def setup_routes(factory):
     factory.post('/me/uid')(get_my_uid)
 
     factory.get('/snakes/{name}')(get_snake)
+
+    factory.get('/tenents/{tenent_id}/echo-groups')(echo_tenent_groups)
 
     # ar_handlers = (None, arlib.create, None, arlib.get, arlib.update, None)
     # factory.map_resource('/resttest/', handlers=ar_handlers)

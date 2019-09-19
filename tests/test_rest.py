@@ -10,6 +10,7 @@ base_url = 'http://127.0.0.1:8000/'
 echo_url = base_url + 'echo'
 secure_echo_url = base_url + 'secure-echo'
 echo_groups_url = base_url + 'echo-groups'
+echo_tenent_groups_url = base_url + 'tenents/1/echo-groups'
 pid_path = 'tests/run/app.pid'
 
 sessiondb_conn = dict(host=settings.SESSIONSDB_HOST,
@@ -68,6 +69,10 @@ def test_secure_echo():
     url = secure_echo_url + '/' + word
     resp = requests.get(url, headers=headers)
     assert resp.status_code == 401
+
+
+def test_setup():
+    sessionsdb.destroy_all()
 
 
 def test_user_id():
@@ -130,3 +135,34 @@ def test_group_access():
 def test_not_found():
     url = base_url + 'snakes/viper'
     assert requests.get(url).status_code == 404
+
+def test_tenent_group_access():
+    # 1. No group
+    uid = 114
+    groups = []
+    d = dict(uid=uid, groups=groups)
+    sid = sessionsdb.create(**d)
+    url = echo_tenent_groups_url
+
+    headers = {'Authorization': sid}
+    assert requests.get(url, headers=headers).status_code == 403
+
+    # 2. Accessing another tenents groups(Forbidden)
+    uid = 115
+    groups = ['2:access-group']
+    d = dict(uid=uid, groups=groups)
+    sid = sessionsdb.create(**d)
+    url = echo_tenent_groups_url
+
+    headers = {'Authorization': sid}
+    assert requests.get(url, headers=headers).status_code == 403
+
+    # 3. Access group
+    uid = 116
+    groups = ['1:access-group']
+    d = dict(uid=uid, groups=groups)
+    sid = sessionsdb.create(**d)
+
+    headers = {'Authorization': sid}
+    assert requests.get(url, headers=headers).status_code == 200
+    assert requests.get(url, headers=headers).json() == groups

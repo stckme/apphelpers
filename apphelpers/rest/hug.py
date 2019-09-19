@@ -13,6 +13,10 @@ def phony(f):
     return f
 
 
+def format_groups(groups, arguments):
+    return [group.format(**arguments) for group in groups] if arguments else groups
+
+
 def raise_not_found_on_none(f):
     if getattr(f, 'not_found_on_none', None) == True:
         @wraps(f)
@@ -129,7 +133,6 @@ class APIFactory:
 
                 @wraps(f)
                 def wrapper(request, *args, **kw):
-
                     user = request.context['user']
 
                     # this is authentication part
@@ -139,10 +142,10 @@ class APIFactory:
                     # this is authorization part
                     groups = set(user.groups)
 
-                    if groups_required and not groups.intersection(groups_required):
+                    if groups_required and not groups.intersection(format_groups(groups_required, kw)):
                         raise HTTPForbidden('Unauthorized access')
 
-                    if groups_forbidden and groups.intersection(groups_forbidden):
+                    if groups_forbidden and groups.intersection(format_groups(groups_forbidden, kw)):
                         raise HTTPForbidden('Unauthorized access')
 
                     return f(*args, **kw)
