@@ -3,14 +3,14 @@ import requests
 import time
 
 import apphelpers.sessions as sessionslib
-
+from tests.app.endpoints import UserGroups
 from converge import settings
 
 base_url = 'http://127.0.0.1:8000/'
 echo_url = base_url + 'echo'
 secure_echo_url = base_url + 'secure-echo'
 echo_groups_url = base_url + 'echo-groups'
-echo_tenent_groups_url = base_url + 'tenents/1/echo-groups'
+echo_tenant_groups_url = base_url + 'tenants/1/echo-groups'
 pid_path = 'tests/run/app.pid'
 
 sessiondb_conn = dict(host=settings.SESSIONSDB_HOST,
@@ -114,7 +114,7 @@ def test_group_access():
 
     # 2. Forbidden group
     uid = 112
-    groups = ['noaccess-group']
+    groups = [UserGroups.FORBIDDEN_USER]
     d = dict(uid=uid, groups=groups)
     sid = sessionsdb.create(**d)
     url = echo_groups_url
@@ -124,7 +124,7 @@ def test_group_access():
 
     # 3. Access group
     uid = 113
-    groups = ['access-group']
+    groups = [UserGroups.SYSTEM_ADMIN]
     d = dict(uid=uid, groups=groups)
     sid = sessionsdb.create(**d)
 
@@ -136,30 +136,30 @@ def test_not_found():
     url = base_url + 'snakes/viper'
     assert requests.get(url).status_code == 404
 
-def test_tenent_group_access():
+def test_tenant_group_access():
     # 1. No group
     uid = 114
     groups = []
     d = dict(uid=uid, groups=groups)
     sid = sessionsdb.create(**d)
-    url = echo_tenent_groups_url
+    url = echo_tenant_groups_url
 
     headers = {'Authorization': sid}
     assert requests.get(url, headers=headers).status_code == 403
 
-    # 2. Accessing another tenents groups(Forbidden)
+    # 2. Accessing another tenants groups(Forbidden)
     uid = 115
-    groups = ['2:access-group']
+    groups = [2001]
     d = dict(uid=uid, groups=groups)
     sid = sessionsdb.create(**d)
-    url = echo_tenent_groups_url
+    url = echo_tenant_groups_url
 
     headers = {'Authorization': sid}
     assert requests.get(url, headers=headers).status_code == 403
 
     # 3. Access group
     uid = 116
-    groups = ['1:access-group']
+    groups = [1001]
     d = dict(uid=uid, groups=groups)
     sid = sessionsdb.create(**d)
 

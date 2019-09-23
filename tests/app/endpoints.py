@@ -3,6 +3,13 @@ import hug.directives
 
 from apphelpers.rest.hug import user_id
 
+
+class UserGroups:
+    SYSTEM_ADMIN = 1
+    FORBIDDEN_USER = 2
+    TENANT_ADMIN = ('tenant_id', 1)
+
+
 def echo(word, user: hug.directives.user=None):
     return '%s:%s' % (user.id, word) if user else word
 
@@ -14,8 +21,8 @@ secure_echo.login_required = True
 
 def echo_groups(user: hug.directives.user=None):
     return user.groups
-echo_groups.groups_required = ['access-group']
-echo_groups.groups_forbidden = ['forbidden-group']
+echo_groups.groups_required = [UserGroups.SYSTEM_ADMIN]
+echo_groups.groups_forbidden = [UserGroups.FORBIDDEN_USER]
 
 
 def add(nums: hug.types.multiple):
@@ -32,9 +39,9 @@ def get_snake(name):
 get_snake.not_found_on_none = True
 
 
-def echo_tenent_groups(tenent_id, user: hug.directives.user=None):
+def echo_tenant_groups(tenant_id: int, user: hug.directives.user=None):
     return user.groups
-echo_tenent_groups.groups_required = ['{tenent_id}:access-group']
+echo_tenant_groups.groups_required = [UserGroups.TENANT_ADMIN]
 
 
 def setup_routes(factory):
@@ -51,7 +58,7 @@ def setup_routes(factory):
 
     factory.get('/snakes/{name}')(get_snake)
 
-    factory.get('/tenents/{tenent_id}/echo-groups')(echo_tenent_groups)
+    factory.get('/tenants/{tenant_id}/echo-groups')(echo_tenant_groups)
 
     # ar_handlers = (None, arlib.create, None, arlib.get, arlib.update, None)
     # factory.map_resource('/resttest/', handlers=ar_handlers)

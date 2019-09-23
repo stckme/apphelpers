@@ -14,7 +14,23 @@ def phony(f):
 
 
 def format_groups(groups, arguments):
-    return [group.format(**arguments) for group in groups] if arguments else groups
+    if not arguments:
+        return groups
+
+    formatted_groups = []
+    for group in groups:
+        if isinstance(group, (tuple, list)):
+            formatted_group = 0
+            for part in group:
+                if isinstance(part, str):
+                    part = arguments[part]
+                formatted_group = formatted_group * 1000 + part
+            formatted_groups.append(formatted_group)
+        elif isinstance(group, str):
+            formatted_groups.append(group.format(**arguments))
+        else:
+            formatted_groups.append(group)
+    return formatted_groups
 
 
 def raise_not_found_on_none(f):
@@ -142,11 +158,15 @@ class APIFactory:
                     # this is authorization part
                     groups = set(user.groups)
 
-                    if groups_required and not groups.intersection(format_groups(groups_required, kw)):
-                        raise HTTPForbidden('Unauthorized access')
+                    if groups_required:
+                        formatted_groups = format_groups(groups_required, kw)
+                        if not groups.intersection(formatted_groups):
+                            raise HTTPForbidden('Unauthorized access')
 
-                    if groups_forbidden and groups.intersection(format_groups(groups_forbidden, kw)):
-                        raise HTTPForbidden('Unauthorized access')
+                    if groups_forbidden:
+                        formatted_groups = format_groups(groups_forbidden, kw)
+                        if groups.intersection(formatted_groups):
+                            raise HTTPForbidden('Unauthorized access')
 
                     return f(*args, **kw)
             else:
