@@ -158,15 +158,11 @@ class APIFactory:
                     # this is authorization part
                     groups = set(user.groups)
 
-                    if groups_required:
-                        formatted_groups = format_groups(groups_required, kw)
-                        if not groups.intersection(formatted_groups):
-                            raise HTTPForbidden('Unauthorized access')
+                    if groups_required and not groups.intersection(format_groups(groups_required, kw)):
+                        raise HTTPForbidden('Unauthorized access')
 
-                    if groups_forbidden:
-                        formatted_groups = format_groups(groups_forbidden, kw)
-                        if groups.intersection(formatted_groups):
-                            raise HTTPForbidden('Unauthorized access')
+                    if groups_forbidden and groups.intersection(format_groups(groups_forbidden, kw)):
+                        raise HTTPForbidden('Unauthorized access')
 
                     return f(*args, **kw)
             else:
