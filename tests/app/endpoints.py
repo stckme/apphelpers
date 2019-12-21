@@ -3,6 +3,7 @@ import hug.directives
 
 from apphelpers.rest.hug import user_id
 
+
 def echo(word, user: hug.directives.user=None):
     return '%s:%s' % (user.id, word) if user else word
 
@@ -32,6 +33,17 @@ def get_snake(name):
 get_snake.not_found_on_none = True
 
 
+def secure_multisite_echo(word, user: hug.directives.user=None):
+    return '%s:%s' % (user.id, word) if user else word
+secure_echo.login_required = True
+
+
+def echo_multisite_groups(site_id: int, user: hug.directives.user=None):
+    return user.groups
+echo_multisite_groups.groups_required = ['site-access-group']
+echo_multisite_groups.groups_forbidden = ['site-forbidden-group']
+
+
 def setup_routes(factory):
 
     factory.get('/echo/{word}')(echo)
@@ -45,6 +57,9 @@ def setup_routes(factory):
     factory.post('/me/uid')(get_my_uid)
 
     factory.get('/snakes/{name}')(get_snake)
+
+    factory.get('/sites/{site_id}/secure-echo/{word}')(secure_multisite_echo)
+    factory.get('/sites/{site_id}/echo-groups')(echo_multisite_groups)
 
     # ar_handlers = (None, arlib.create, None, arlib.get, arlib.update, None)
     # factory.map_resource('/resttest/', handlers=ar_handlers)

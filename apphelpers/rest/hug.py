@@ -1,3 +1,4 @@
+import inspect
 from dataclasses import dataclass, asdict
 from functools import wraps
 from falcon import HTTPUnauthorized, HTTPForbidden, HTTPNotFound
@@ -82,7 +83,6 @@ def setup_context_setter(sessions):
         """
         uid, groups, name, email = None, [], '', None
         token = request.get_header('Authorization')
-
         if token:
             try:
                 session = sessions.get(token, ['uid', 'name', 'groups', 'email'])
@@ -91,7 +91,6 @@ def setup_context_setter(sessions):
                 pass
 
         request.context['user'] = User(sid=token, id=uid, name=name, groups=groups, email=email)
-
     return set_context
 
 
@@ -102,6 +101,12 @@ class APIFactory:
         self.db_tr_wrapper = phony
         self.access_wrapper = phony
         self.secure_router = None
+        self.multi_site_enabled = False
+        self.site_identifier = None
+
+    def enable_multi_site(self, site_identifier):
+        self.multi_site_enabled = True
+        self.site_identifier = site_identifier
 
     def setup_db_transaction(self, db):
         self.db_tr_wrapper = dbtransaction(db)
@@ -147,12 +152,50 @@ class APIFactory:
 
                     return f(*args, **kw)
             else:
-
                 wrapper = f
 
             return wrapper
 
-        self.access_wrapper = access_wrapper
+        def multisite_access_wrapper(f):
+            """
+            This is the authentication + authorization part
+            """
+            login_required = getattr(f, 'login_required', None)
+            groups_required = getattr(f, 'groups_required', None)
+            groups_forbidden = getattr(f, 'groups_forbidden', None)
+
+            if login_required or groups_required or groups_forbidden:
+
+                @wraps(f)
+                def wrapper(request, *args, **kw):
+
+                    user = request.context['user']
+
+                    # this is authentication part
+                    if not user.id:
+                        raise HTTPUnauthorized('Invalid or expired session')
+
+                    # this is authorization part
+                    groups = set(user.groups.get(0, []))
+                    if self.site_identifier in kw:
+                        site_id = int(kw[self.site_identifier])
+                        if self.site_identifier not in inspect.getfullargspec(f).args:
+                            del(kw[self.site_identifier])
+                        groups = groups.union(user.groups.get(site_id, []))
+
+                    if groups_required and not groups.intersection(groups_required):
+                        raise HTTPForbidden('Unauthorized access')
+
+                    if groups_forbidden and groups.intersection(groups_forbidden):
+                        raise HTTPForbidden('Unauthorized access')
+
+                    return f(*args, **kw)
+            else:
+                wrapper = f
+
+            return wrapper
+
+        self.access_wrapper = multisite_access_wrapper if self.multi_site_enabled else access_wrapper
 
     def choose_router(self, f):
         login_required = hasattr(f, 'login_required') and f.login_required

@@ -40,7 +40,7 @@ def test_create():
     state.sid = sid
 
 
-def test_uodate():
+def test_update():
     sid = state.sid
     k, v = data.session.k, data.session.v
     sessionsdb.update(sid, {k: v})

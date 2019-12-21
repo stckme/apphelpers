@@ -6,10 +6,12 @@ import apphelpers.sessions as sessionslib
 
 from converge import settings
 
-base_url = 'http://127.0.0.1:8000/'
+base_url = 'http://127.0.0.1:5000/'
 echo_url = base_url + 'echo'
 secure_echo_url = base_url + 'secure-echo'
 echo_groups_url = base_url + 'echo-groups'
+secure_site_echo_url = base_url + 'sites/1/secure-echo'
+echo_site_groups_url = base_url + 'sites/1/echo-groups'
 pid_path = 'tests/run/app.pid'
 
 sessiondb_conn = dict(host=settings.SESSIONSDB_HOST,
@@ -17,6 +19,7 @@ sessiondb_conn = dict(host=settings.SESSIONSDB_HOST,
                       password=settings.SESSIONSDB_PASSWD,
                       db=settings.SESSIONSDB_NO)
 sessionsdb = sessionslib.SessionDBHandler(sessiondb_conn)
+sessionsdb.destroy_all()
 
 
 def gunicorn_setup_module():  # not working
@@ -72,7 +75,7 @@ def test_secure_echo():
 
 def test_user_id():
     uid = 101
-    d = dict(uid=uid, groups=[])
+    d = dict(uid=uid, groups={})
     sid = sessionsdb.create(**d)
 
     headers = {'Authorization': sid}
@@ -99,7 +102,7 @@ def test_user_id():
 def test_group_access():
     # 1. No group
     uid = 111
-    groups = []
+    groups = {}
     d = dict(uid=uid, groups=groups)
     sid = sessionsdb.create(**d)
     url = echo_groups_url
@@ -109,7 +112,7 @@ def test_group_access():
 
     # 2. Forbidden group
     uid = 112
-    groups = ['noaccess-group']
+    groups = {0: ['noaccess-group']}
     d = dict(uid=uid, groups=groups)
     sid = sessionsdb.create(**d)
     url = echo_groups_url
@@ -119,14 +122,43 @@ def test_group_access():
 
     # 3. Access group
     uid = 113
-    groups = ['access-group']
+    groups = {0: ['access-group']}
     d = dict(uid=uid, groups=groups)
     sid = sessionsdb.create(**d)
 
     headers = {'Authorization': sid}
     assert requests.get(url, headers=headers).status_code == 200
-    assert requests.get(url, headers=headers).json() == groups
 
 def test_not_found():
     url = base_url + 'snakes/viper'
     assert requests.get(url).status_code == 404
+
+def test_site_group_access():
+    # 1. No group
+    uid = 114
+    groups = {}
+    d = dict(uid=uid, groups=groups)
+    sid = sessionsdb.create(**d)
+    url = echo_site_groups_url
+
+    headers = {'Authorization': sid}
+    assert requests.get(url, headers=headers).status_code == 403
+
+    # 2. Forbidden group
+    uid = 115
+    groups = {0: ['noaccess-group'], 1: ['site-noaccess-group']}
+    d = dict(uid=uid, groups=groups)
+    sid = sessionsdb.create(**d)
+    url = echo_site_groups_url
+
+    headers = {'Authorization': sid}
+    assert requests.get(url, headers=headers).status_code == 403
+
+    # 3. Access group
+    uid = 116
+    groups = {0: ['access-group'], 1: ['site-access-group']}
+    d = dict(uid=uid, groups=groups)
+    sid = sessionsdb.create(**d)
+
+    headers = {'Authorization': sid}
+    assert requests.get(url, headers=headers).status_code == 200
