@@ -20,7 +20,7 @@ class SiteGroups(Enum):
     forbidden_group = 13
 
 
-base_url = 'http://127.0.0.1:5000/'
+base_url = 'http://127.0.0.1:8000/'
 echo_url = base_url + 'echo'
 secure_echo_url = base_url + 'secure-echo'
 echo_groups_url = base_url + 'echo-groups'
