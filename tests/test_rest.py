@@ -1,10 +1,24 @@
 import os
 import requests
 import time
+from enum import Enum
 
 import apphelpers.sessions as sessionslib
 
 from converge import settings
+
+
+class Groups(Enum):
+    access_group = 1
+    no_access_group = 2
+    forbidden_group = 3
+
+
+class SiteGroups(Enum):
+    access_group = 11
+    no_access_group = 12
+    forbidden_group = 13
+
 
 base_url = 'http://127.0.0.1:5000/'
 echo_url = base_url + 'echo'
@@ -75,7 +89,7 @@ def test_secure_echo():
 
 def test_user_id():
     uid = 101
-    d = dict(uid=uid, groups={})
+    d = dict(uid=uid, groups=[])
     sid = sessionsdb.create(**d)
 
     headers = {'Authorization': sid}
@@ -102,7 +116,7 @@ def test_user_id():
 def test_group_access():
     # 1. No group
     uid = 111
-    groups = {}
+    groups = []
     d = dict(uid=uid, groups=groups)
     sid = sessionsdb.create(**d)
     url = echo_groups_url
@@ -112,7 +126,7 @@ def test_group_access():
 
     # 2. Forbidden group
     uid = 112
-    groups = {0: ['noaccess-group']}
+    groups = [Groups.forbidden_group.value]
     d = dict(uid=uid, groups=groups)
     sid = sessionsdb.create(**d)
     url = echo_groups_url
@@ -122,7 +136,7 @@ def test_group_access():
 
     # 3. Access group
     uid = 113
-    groups = {0: ['access-group']}
+    groups = [Groups.access_group.value]
     d = dict(uid=uid, groups=groups)
     sid = sessionsdb.create(**d)
 
@@ -136,8 +150,9 @@ def test_not_found():
 def test_site_group_access():
     # 1. No group
     uid = 114
-    groups = {}
-    d = dict(uid=uid, groups=groups)
+    groups = []
+    site_groups = {}
+    d = dict(uid=uid, groups=groups, site_groups=site_groups)
     sid = sessionsdb.create(**d)
     url = echo_site_groups_url
 
@@ -146,8 +161,9 @@ def test_site_group_access():
 
     # 2. Forbidden group
     uid = 115
-    groups = {0: ['noaccess-group'], 1: ['site-noaccess-group']}
-    d = dict(uid=uid, groups=groups)
+    groups = [Groups.forbidden_group.value]
+    site_groups = {1: [SiteGroups.forbidden_group.value]}
+    d = dict(uid=uid, groups=groups, site_groups=site_groups)
     sid = sessionsdb.create(**d)
     url = echo_site_groups_url
 
@@ -156,8 +172,9 @@ def test_site_group_access():
 
     # 3. Access group
     uid = 116
-    groups = {0: ['access-group'], 1: ['site-access-group']}
-    d = dict(uid=uid, groups=groups)
+    groups = [Groups.access_group.value]
+    site_groups = {1: [SiteGroups.access_group.value]}
+    d = dict(uid=uid, groups=groups, site_groups=site_groups)
     sid = sessionsdb.create(**d)
 
     headers = {'Authorization': sid}

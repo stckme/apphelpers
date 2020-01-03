@@ -23,9 +23,13 @@ class SessionDBHandler:
         """
         self.rconn = redis.Redis(**rconn_params)
 
-    def create(self, uid='', groups=None, extras=None, ttl=(30 * 24 * 60 * 60)):
+    def create(
+        self, uid='', groups=None, site_groups=None,
+        extras=None, ttl=(30 * 24 * 60 * 60)
+    ):
         """
         groups: list
+        site_groups: dict
         extras (dict): each key-value pair of extras get stored into hset
         """
         if uid:
@@ -38,7 +42,7 @@ class SessionDBHandler:
 
         if groups is None:
             groups = []
-        session_dict = {'uid': uid, 'groups': groups}
+        session_dict = {'uid': uid, 'groups': groups, 'site_groups': site_groups}
         if extras:
             session_dict.update(extras)
         session = {k: pickle.dumps(v) for k, v in session_dict.items()}
