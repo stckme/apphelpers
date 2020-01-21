@@ -10,6 +10,7 @@ def make_app():
     router = hug.route.API(__name__)
 
     api_factory = APIFactory(router)
+    api_factory.enable_multi_site(site_identifier='site_id')
     # api_factory.setup_db_transaction(app.models.db)
     sessiondb_conn = dict(host=settings.SESSIONSDB_HOST,
                           port=settings.SESSIONSDB_PORT,

@@ -1,15 +1,33 @@
 import os
 import requests
 import time
+from enum import Enum
 
 import apphelpers.sessions as sessionslib
 
 from converge import settings
 
-base_url = 'http://127.0.0.1:8000/'
-echo_url = base_url + 'echo'
-secure_echo_url = base_url + 'secure-echo'
-echo_groups_url = base_url + 'echo-groups'
+
+class globalgroups(Enum):
+    privileged = 1
+    others = 2
+    forbidden = 3
+
+
+class sitegroups(Enum):
+    privileged = 11
+    others = 12
+    forbidden = 13
+
+
+class urls:
+    base = 'http://127.0.0.1:8000/'
+    echo = base + 'echo'
+    echo_for_registered = base + 'secure-echo'
+    echo_for_groups = base + 'echo-groups'
+    echo_for_sitegroups = base + 'sites/1/echo-groups'
+
+
 pid_path = 'tests/run/app.pid'
 
 sessiondb_conn = dict(host=settings.SESSIONSDB_HOST,
@@ -17,6 +35,7 @@ sessiondb_conn = dict(host=settings.SESSIONSDB_HOST,
                       password=settings.SESSIONSDB_PASSWD,
                       db=settings.SESSIONSDB_NO)
 sessionsdb = sessionslib.SessionDBHandler(sessiondb_conn)
+sessionsdb.destroy_all()
 
 
 def gunicorn_setup_module():  # not working
@@ -38,34 +57,34 @@ def gunicorn_teardown_module():
 
 def test_get():
     word = 'hello'
-    url = echo_url + '/' + word
+    url = urls.echo + '/' + word
     assert requests.get(url).json() == word
 
 
 def test_get_params():
     word = 'hello'
-    url = echo_url + '/' + word
+    url = urls.echo + '/' + word
     params = {'word': word}
     assert requests.get(url, params=params).json() == word
 
 
 def test_get_multi_params():
     nums = [3, 5]
-    url = base_url + 'add'
+    url = urls.base + 'add'
     params = {'nums': nums}
     assert requests.get(url, params=params).json() == sum(nums)
 
 
 def test_post():
     word = 'hello'
-    url = echo_url
+    url = urls.echo
     assert requests.post(url, json={'word': word}).json() == word
 
 
-def test_secure_echo():
+def test_echo_for_registered():
     word = 'hello'
     headers = {'NoAuthorization': 'Header'}
-    url = secure_echo_url + '/' + word
+    url = urls.echo_for_registered + '/' + word
     resp = requests.get(url, headers=headers)
     assert resp.status_code == 401
 
@@ -78,10 +97,10 @@ def test_user_id():
     headers = {'Authorization': sid}
 
     word = 'hello'
-    url = echo_url + '/' + word
+    url = urls.echo + '/' + word
     assert requests.get(url, headers=headers).json() == ('%s:%s' % (uid, word))
 
-    url = base_url + 'me/uid'
+    url = urls.base + 'me/uid'
 
     data = {'uid': None}
     resp = requests.post(url, json=data, headers=headers)
@@ -102,31 +121,75 @@ def test_group_access():
     groups = []
     d = dict(uid=uid, groups=groups)
     sid = sessionsdb.create(**d)
-    url = echo_groups_url
+    url = urls.echo_for_groups
 
     headers = {'Authorization': sid}
     assert requests.get(url, headers=headers).status_code == 403
 
     # 2. Forbidden group
     uid = 112
-    groups = ['noaccess-group']
+    groups = [globalgroups.forbidden.value]
     d = dict(uid=uid, groups=groups)
     sid = sessionsdb.create(**d)
-    url = echo_groups_url
+    url = urls.echo_for_groups
 
     headers = {'Authorization': sid}
     assert requests.get(url, headers=headers).status_code == 403
 
     # 3. Access group
     uid = 113
-    groups = ['access-group']
+    groups = [globalgroups.privileged.value]
     d = dict(uid=uid, groups=groups)
     sid = sessionsdb.create(**d)
 
     headers = {'Authorization': sid}
     assert requests.get(url, headers=headers).status_code == 200
-    assert requests.get(url, headers=headers).json() == groups
+
+    # 4. Other groups
+    uid = 112
+    groups = [globalgroups.others.value]
+    d = dict(uid=uid, groups=groups)
+    sid = sessionsdb.create(**d)
+    url = urls.echo_for_groups
+
+    headers = {'Authorization': sid}
+    assert requests.get(url, headers=headers).status_code == 403
+
 
 def test_not_found():
-    url = base_url + 'snakes/viper'
+    url = urls.base + 'snakes/viper'
     assert requests.get(url).status_code == 404
+
+
+def test_site_group_access():
+    # 1. No group
+    uid = 114
+    groups = []
+    site_groups = {}
+    d = dict(uid=uid, groups=groups, site_groups=site_groups)
+    sid = sessionsdb.create(**d)
+    url = urls.echo_for_sitegroups
+
+    headers = {'Authorization': sid}
+    assert requests.get(url, headers=headers).status_code == 403
+
+    # 2. Forbidden group
+    uid = 115
+    groups = [globalgroups.forbidden.value]
+    site_groups = {1: [sitegroups.forbidden.value]}
+    d = dict(uid=uid, groups=groups, site_groups=site_groups)
+    sid = sessionsdb.create(**d)
+    url = urls.echo_for_sitegroups
+
+    headers = {'Authorization': sid}
+    assert requests.get(url, headers=headers).status_code == 403
+
+    # 3. Access group
+    uid = 116
+    groups = [globalgroups.privileged.value]
+    site_groups = {1: [sitegroups.privileged.value]}
+    d = dict(uid=uid, groups=groups, site_groups=site_groups)
+    sid = sessionsdb.create(**d)
+
+    headers = {'Authorization': sid}
+    assert requests.get(url, headers=headers).status_code == 200

@@ -1,3 +1,4 @@
+import inspect
 from dataclasses import dataclass, asdict
 from functools import wraps
 from falcon import HTTPUnauthorized, HTTPForbidden, HTTPNotFound
@@ -47,6 +48,7 @@ class User:
     name: str=None
     groups: tuple=()
     email: str=None
+    site_groups: dict=None
 
     def to_dict(self):
         return asdict(self)
@@ -59,16 +61,21 @@ def setup_strict_context_setter(sessions):
 
     def set_context(token):
 
-        uid, groups, name, email = None, [], '', None
+        uid, groups, name, email, site_groups = None, [], '', None, {}
 
         if token:
             try:
-                session = sessions.get(token, ['uid', 'name', 'groups', 'email'])
-                uid, name, groups, email = session['uid'], session['name'], session['groups'], session['email']
+                session = sessions.get(token, ['uid', 'name', 'groups', 'email', 'site_groups'])
+                uid, name, groups, email, site_groups = (
+                    session['uid'], session['name'], session['groups'],
+                    session['email'], session['site_groups']
+                )
             except InvalidSessionError:
                 raise HTTPUnauthorized('Invalid or expired session')
 
-        return User(sid=token, id=uid, name=name, groups=groups, email=email)
+        return User(
+            sid=token, id=uid, name=name, groups=groups, email=email, site_groups=site_groups
+        )
 
     return set_context
 
@@ -80,18 +87,21 @@ def setup_context_setter(sessions):
         Only sets context based on session.
         Does not raise any error
         """
-        uid, groups, name, email = None, [], '', None
+        uid, groups, name, email, site_groups = None, [], '', None, {}
         token = request.get_header('Authorization')
-
         if token:
             try:
-                session = sessions.get(token, ['uid', 'name', 'groups', 'email'])
-                uid, name, groups, email = session['uid'], session['name'], session['groups'], session['email']
+                session = sessions.get(token, ['uid', 'name', 'groups', 'email', 'site_groups'])
+                uid, name, groups, email, site_groups = (
+                    session['uid'], session['name'], session['groups'],
+                    session['email'], session['site_groups']
+                )
             except InvalidSessionError:
                 pass
 
-        request.context['user'] = User(sid=token, id=uid, name=name, groups=groups, email=email)
-
+        request.context['user'] = User(
+            sid=token, id=uid, name=name, groups=groups, email=email, site_groups=site_groups
+        )
     return set_context
 
 
@@ -102,6 +112,12 @@ class APIFactory:
         self.db_tr_wrapper = phony
         self.access_wrapper = phony
         self.secure_router = None
+        self.multi_site_enabled = False
+        self.site_identifier = None
+
+    def enable_multi_site(self, site_identifier):
+        self.multi_site_enabled = True
+        self.site_identifier = site_identifier
 
     def setup_db_transaction(self, db):
         self.db_tr_wrapper = dbtransaction(db)
@@ -147,12 +163,50 @@ class APIFactory:
 
                     return f(*args, **kw)
             else:
-
                 wrapper = f
 
             return wrapper
 
-        self.access_wrapper = access_wrapper
+        def multisite_access_wrapper(f):
+            """
+            This is the authentication + authorization part
+            """
+            login_required = getattr(f, 'login_required', None)
+            groups_required = getattr(f, 'groups_required', None)
+            groups_forbidden = getattr(f, 'groups_forbidden', None)
+
+            if login_required or groups_required or groups_forbidden:
+
+                @wraps(f)
+                def wrapper(request, *args, **kw):
+
+                    user = request.context['user']
+
+                    # this is authentication part
+                    if not user.id:
+                        raise HTTPUnauthorized('Invalid or expired session')
+
+                    # this is authorization part
+                    groups = set(user.groups)
+                    if self.site_identifier in kw:
+                        site_id = int(kw[self.site_identifier])
+                        if self.site_identifier not in inspect.getfullargspec(f).args:
+                            del(kw[self.site_identifier])
+                        groups = groups.union(user.site_groups.get(site_id, []))
+
+                    if groups_required and not groups.intersection(groups_required):
+                        raise HTTPForbidden('Unauthorized access')
+
+                    if groups_forbidden and groups.intersection(groups_forbidden):
+                        raise HTTPForbidden('Unauthorized access')
+
+                    return f(*args, **kw)
+            else:
+                wrapper = f
+
+            return wrapper
+
+        self.access_wrapper = multisite_access_wrapper if self.multi_site_enabled else access_wrapper
 
     def choose_router(self, f):
         login_required = hasattr(f, 'login_required') and f.login_required
