@@ -4,17 +4,7 @@ import hug.directives
 
 from apphelpers.rest.hug import user_id
 
-
-class Groups(Enum):
-    access_group = 1
-    no_access_group = 2
-    forbidden_group = 3
-
-
-class SiteGroups(Enum):
-    access_group = 11
-    no_access_group = 12
-    forbidden_group = 13
+from tests.app.models import globalgroups, sitegroups
 
 
 def echo(word, user: hug.directives.user=None):
@@ -28,8 +18,8 @@ secure_echo.login_required = True
 
 def echo_groups(user: hug.directives.user=None):
     return user.groups
-echo_groups.groups_required = [Groups.access_group.value]
-echo_groups.groups_forbidden = [Groups.forbidden_group.value]
+echo_groups.groups_required = [globalgroups.privileged.value]
+echo_groups.groups_forbidden = [globalgroups.forbidden.value]
 
 
 def add(nums: hug.types.multiple):
@@ -53,8 +43,8 @@ secure_echo.login_required = True
 
 def echo_multisite_groups(site_id: int, user: hug.directives.user=None):
     return user.groups
-echo_multisite_groups.groups_required = [SiteGroups.access_group.value]
-echo_multisite_groups.groups_forbidden = [SiteGroups.forbidden_group.value]
+echo_multisite_groups.groups_required = [sitegroups.privileged.value]
+echo_multisite_groups.groups_forbidden = [sitegroups.forbidden.value]
 
 
 def setup_routes(factory):
