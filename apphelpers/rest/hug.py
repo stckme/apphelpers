@@ -108,7 +108,7 @@ def setup_context_setter(sessions):
 class APIFactory:
 
     def __init__(self, router):
-        self._router = router
+        self.router = router
         self.db_tr_wrapper = phony
         self.access_wrapper = phony
         self.secure_router = None
@@ -129,7 +129,7 @@ class APIFactory:
         """
         self.sessions = SessionDBHandler(sessiondb_conn)
         set_context = setup_context_setter(self.sessions)
-        self.router = self._router.http(requires=set_context)
+        self.router = self.router.http(requires=set_context)
         set_context = setup_strict_context_setter(self.sessions)
         self.secure_router = self.router.http(requires=hug.authentication.token(set_context))
 
