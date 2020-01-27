@@ -1,23 +1,11 @@
 import os
 import requests
 import time
-from enum import Enum
-
 import apphelpers.sessions as sessionslib
 
+from .app.models import globalgroups, sitegroups
+
 from converge import settings
-
-
-class globalgroups(Enum):
-    privileged = 1
-    others = 2
-    forbidden = 3
-
-
-class sitegroups(Enum):
-    privileged = 11
-    others = 12
-    forbidden = 13
 
 
 class urls:
