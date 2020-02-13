@@ -104,3 +104,27 @@ def enumify(TheModel, name_field="name", val_field="id"):
 def dbc(db):
     pid = os.getpid()
     return "[%s]: %s:%s" % (pid, len(db._in_use), db.max_connections)
+
+
+def get_sub_models(base_model):
+    models = []
+    for sub_model in base_model.__subclasses__():
+        models.append(sub_model)
+        models.extend(get_sub_models(sub_model))
+    return models
+
+
+def setup_db(db, models):
+    db.create_tables(models, fail_silently=True)
+
+
+def setup_db_from_basemodel(db, basemodel):
+    models = get_sub_models(basemodel)
+    db.create_tables(models, fail_silently=True)
+
+
+def destroy_db(models):
+    for o in models[::-1]:
+        if o.table_exists():
+            o.drop_table()
+            print('DROP: ' + o._meta.name)
