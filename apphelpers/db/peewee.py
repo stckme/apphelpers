@@ -106,6 +106,7 @@ def dbc(db):
     return "[%s]: %s:%s" % (pid, len(db._in_use), db.max_connections)
 
 
+
 def get_sub_models(base_model):
     models = []
     for sub_model in base_model.__subclasses__():
@@ -113,6 +114,10 @@ def get_sub_models(base_model):
         models.extend(get_sub_models(sub_model))
     return models
 
+
+# Useful functions for test/dev setups
+# NOTE: For below functions, models is list of model classes sorted by dependency
+# Example: [Author, Publication, Post, Comment]
 
 def setup_db(db, models):
     db.create_tables(models, fail_silently=True)
