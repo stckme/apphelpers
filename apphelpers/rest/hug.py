@@ -222,36 +222,36 @@ class APIFactory:
     def get(self, *a, **k):
         def _wrapper(f):
             router = self.choose_router(f)
-            url = (self.urls_prefix + a[0],) + a[1:] if not a[0].startswith('/') else a
-            return self.build(router.get, url, k, f)
+            ar = (self.urls_prefix + a[0],) + a[1:] if not a[0].startswith('/') else a
+            return self.build(router.get, ar, k, f)
         return _wrapper
 
     def post(self, *a, **k):
         def _wrapper(f):
             router = self.choose_router(f)
-            url = (self.urls_prefix + a[0],) + a[1:] if not a[0].startswith('/') else a
-            return self.build(router.post, url, k, f)
+            ar = (self.urls_prefix + a[0],) + a[1:] if not a[0].startswith('/') else a
+            return self.build(router.post, ar, k, f)
         return _wrapper
 
     def put(self, *a, **k):
         def _wrapper(f):
             router = self.choose_router(f)
-            url = (self.urls_prefix + a[0],) + a[1:] if not a[0].startswith('/') else a
-            return self.build(router.put, url, k, f)
+            ar = (self.urls_prefix + a[0],) + a[1:] if not a[0].startswith('/') else a
+            return self.build(router.put, ar, k, f)
         return _wrapper
 
     def patch(self, *a, **k):
         def _wrapper(f):
             router = self.choose_router(f)
-            url = (self.urls_prefix + a[0],) + a[1:] if not a[0].startswith('/') else a
-            return self.build(router.patch, url, k, f)
+            ar = (self.urls_prefix + a[0],) + a[1:] if not a[0].startswith('/') else a
+            return self.build(router.patch, ar, k, f)
         return _wrapper
 
     def delete(self, *a, **k):
         def _wrapper(f):
             router = self.choose_router(f)
-            url = (self.urls_prefix + a[0],) + a[1:] if not a[0].startswith('/') else a
-            return self.build(router.delete, url, k, f)
+            ar = (self.urls_prefix + a[0],) + a[1:] if not a[0].startswith('/') else a
+            return self.build(router.delete, ar, k, f)
         return _wrapper
 
     def map_resource(self, collection_url, resource=None, handlers=None, id_field='id'):
