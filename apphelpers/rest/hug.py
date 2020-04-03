@@ -107,13 +107,14 @@ def setup_context_setter(sessions):
 
 class APIFactory:
 
-    def __init__(self, router):
+    def __init__(self, router, urls_prefix=''):
         self.router = router
         self.db_tr_wrapper = phony
         self.access_wrapper = phony
         self.secure_router = None
         self.multi_site_enabled = False
         self.site_identifier = None
+        self.urls_prefix = urls_prefix
 
     def enable_multi_site(self, site_identifier):
         self.multi_site_enabled = True
@@ -218,37 +219,46 @@ class APIFactory:
         f = raise_not_found_on_none(self.access_wrapper(self.db_tr_wrapper(f)))
         return m(f)
 
-    def get(self, *a, **k):
+    def get(self, path, *a, **k):
         def _wrapper(f):
             router = self.choose_router(f)
-            return self.build(router.get, a, k, f)
+            args = (path if path.startswith('/') else (self.urls_prefix + path),) + a
+            return self.build(router.get, args, k, f)
         return _wrapper
 
-    def post(self, *a, **k):
+    def post(self, path, *a, **k):
         def _wrapper(f):
             router = self.choose_router(f)
-            return self.build(router.post, a, k, f)
+            args = (path if path.startswith('/') else (self.urls_prefix + path),) + a
+            return self.build(router.post, args, k, f)
         return _wrapper
 
-    def patch(self, *a, **k):
+    def put(self, path, *a, **k):
         def _wrapper(f):
             router = self.choose_router(f)
-            return self.build(router.patch, a, k, f)
+            args = (path if path.startswith('/') else (self.urls_prefix + path),) + a
+            return self.build(router.put, args, k, f)
         return _wrapper
 
-    def delete(self, *a, **k):
+    def patch(self, path, *a, **k):
         def _wrapper(f):
             router = self.choose_router(f)
-            return self.build(router.delete, a, k, f)
+            args = (path if path.startswith('/') else (self.urls_prefix + path),) + a
+            return self.build(router.patch, args, k, f)
         return _wrapper
 
-    def map_resource(self, url, resource=None, handlers=None, id_field='id'):
+    def delete(self, path, *a, **k):
+        def _wrapper(f):
+            router = self.choose_router(f)
+            args = (path if path.startswith('/') else (self.urls_prefix + path),) + a
+            return self.build(router.delete, args, k, f)
+        return _wrapper
+
+    def map_resource(self, collection_url, resource=None, handlers=None, id_field='id'):
         if resource:
             raise NotImplementedError("Resource not supported yet")
 
-        collection_url = (self.urls_prefix + url) if not url.startswith('/') else url
         resource_url = collection_url + '{' + id_field + '}'
-
         assert isinstance(handlers, (list, tuple)), "handlers should be list or tuple"
         get_collection, add_resource, replace_resource, get_resource, update_resource, delete_resource = handlers
 
