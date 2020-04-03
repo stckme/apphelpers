@@ -107,7 +107,7 @@ def setup_context_setter(sessions):
 
 class APIFactory:
 
-    def __init__(self, router, urls_prefix=None):
+    def __init__(self, router, urls_prefix=''):
         self.router = router
         self.db_tr_wrapper = phony
         self.access_wrapper = phony
