@@ -120,12 +120,12 @@ def get_sub_models(base_model):
 # Example: [Author, Publication, Post, Comment]
 
 def setup_db(db, models):
-    db.create_tables(models, fail_silently=True)
+    db.create_tables(models, safe=True)
 
 
 def setup_db_from_basemodel(db, basemodel):
     models = get_sub_models(basemodel)
-    db.create_tables(models, fail_silently=True)
+    db.create_tables(models, safe=True)
 
 
 def destroy_db(models):
