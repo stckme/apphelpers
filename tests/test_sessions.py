@@ -47,7 +47,20 @@ def test_update():
     d = sessionsdb.get(sid)
     assert d[k] == v
     assert d['email'] == data.session_email
-    sessionsdb.remove_from_session(sid, k)
+    sessionsdb.remove_from_session(sid, [k])
+    d = sessionsdb.get(sid)
+    assert k not in d
+
+
+def test_resync():
+    sid = state.sid
+    k, v = data.session.k, data.session.v
+    sessionsdb.update(sid, {k: v})
+    d = sessionsdb.get(sid)
+    assert d[k] == v
+
+    d = dict(uid=data.session.uid, groups=data.session.groups, extras=dict(email=data.session_email))
+    sessionsdb.resync(sid, d)
     d = sessionsdb.get(sid)
     assert k not in d
 

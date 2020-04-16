@@ -99,9 +99,20 @@ class SessionDBHandler:
         self.rconn.hset(key, attribute, pickle.dumps(value))
         return True
 
+    def resync(self, sid, keyvalues):
+        removed_keys = list(self.get(sid).keys() - keyvalues.keys())
+        self.remove_from_session(sid, removed_keys)
+        keyvalues = {k: pickle.dumps(v) for k, v in list(keyvalues.items())}
+        self.rconn.hmset(session_key(sid), keyvalues)
+
+    def resync_for(self, uid, keyvalues):
+        sid = self.uid2sid(uid)
+        return self.resync(sid, keyvalues) if sid else None
+
     def remove_from_session(self, sid, keys):
         sk = session_key(sid)
-        self.rconn.hdel(sk, keys)
+        if keys:
+            self.rconn.hdel(sk, *keys)
         return True
 
     def destroy(self, sid):
