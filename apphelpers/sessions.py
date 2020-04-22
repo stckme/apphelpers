@@ -105,6 +105,7 @@ class SessionDBHandler:
         self.update(sid, keyvalues)
 
     def resync_for(self, uid, keyvalues):
+        keyvalues['uid'] = uid
         sid = self.uid2sid(uid)
         return self.resync(sid, keyvalues) if sid else None
 
