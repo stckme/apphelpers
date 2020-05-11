@@ -17,8 +17,14 @@ def phony(f):
 def raise_not_found_on_none(f):
     if getattr(f, 'not_found_on_none', None) == True:
         @wraps(f)
-        def wrapper(*a, **k):
-            ret = f(*a, **k)
+        def wrapper(*ar, **kw):
+            # Remove extra parmas like site identifier if param is not present
+            # in handler's arguments
+            kw = {
+                k: v for k, v in kw.items()
+                if k in inspect.getfullargspec(f).args
+            }
+            ret = f(*ar, **kw)
             if ret is None:
                 raise HTTPNotFound('four o four')
             return ret

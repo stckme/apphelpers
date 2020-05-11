@@ -63,6 +63,7 @@ def setup_routes(factory):
 
     factory.get('/sites/{site_id}/secure-echo/{word}')(secure_multisite_echo)
     factory.get('/sites/{site_id}/echo-groups')(echo_multisite_groups)
+    factory.get('/sites/{site_id}/snakes/{name}')(get_snake)
 
     # ar_handlers = (None, arlib.create, None, arlib.get, arlib.update, None)
     # factory.map_resource('/resttest/', handlers=ar_handlers)

@@ -148,6 +148,9 @@ def test_not_found():
     url = urls.base + 'snakes/viper'
     assert requests.get(url).status_code == 404
 
+    url = urls.base + 'sites/1/snakes/viper'
+    assert requests.get(url).status_code == 404
+
 
 def test_site_group_access():
     # 1. No group
