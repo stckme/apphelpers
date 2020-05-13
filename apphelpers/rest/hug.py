@@ -4,6 +4,7 @@ from functools import wraps
 from falcon import HTTPUnauthorized, HTTPForbidden, HTTPNotFound
 
 import hug
+import hug.introspect as introspect
 
 from apphelpers.db.peewee import dbtransaction
 from apphelpers.errors import InvalidSessionError
@@ -14,11 +15,22 @@ def phony(f):
     return f
 
 
+def extra_args_protector(f):
+    supported = introspect.arguments(f)
+    @wraps(f)
+    def wrapper(*a, **kw):
+        unsupported = set(kw.keys()).difference(supported)
+        for k in unsupported:
+            kw.pop(k)
+        return f(*a, **kw)
+    return wrapper
+
+
 def raise_not_found_on_none(f):
     if getattr(f, 'not_found_on_none', None) == True:
         @wraps(f)
-        def wrapper(*a, **k):
-            ret = f(*a, **k)
+        def wrapper(*ar, **kw):
+            ret = f(*ar, **kw)
             if ret is None:
                 raise HTTPNotFound('four o four')
             return ret
@@ -191,8 +203,6 @@ class APIFactory:
                     groups = set(user.groups)
                     if self.site_identifier in kw:
                         site_id = int(kw[self.site_identifier])
-                        if self.site_identifier not in inspect.getfullargspec(f).args:
-                            del(kw[self.site_identifier])
                         groups = groups.union(user.site_groups.get(site_id, []))
 
                     if groups_required and not groups.intersection(groups_required):
@@ -202,6 +212,7 @@ class APIFactory:
                         raise HTTPForbidden('Unauthorized access')
 
                     return f(*args, **kw)
+
             else:
                 wrapper = f
 
@@ -216,6 +227,16 @@ class APIFactory:
     def build(self, method, method_args, method_kw, f):
         print(f'{method_args[0]} [{method.__name__.upper()}] => {f.__module__}:{f.__name__}')
         m = method(*method_args, **method_kw)
+
+        # site identifier (which is in URL pattern) may not be specified in
+        # the function signature. Addition protection for the same
+        # In regular hug code (not using apphelpers) this is not a problem,
+        # as hug cleans up extra params which are not in function signature
+        # but since we add lot of wrappers to function (refer `build()`)
+        # which mostly take *args, **kw hug's builtin mechanism doesn't work
+        if self.multi_site_enabled:
+            f = extra_args_protector(f)
+
         f = raise_not_found_on_none(self.access_wrapper(self.db_tr_wrapper(f)))
         return m(f)
 
