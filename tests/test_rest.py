@@ -145,11 +145,17 @@ def test_group_access():
 
 
 def test_not_found():
+    uid = 117
+    d = dict(uid=uid, groups=[], site_groups={})
+    sid = sessionsdb.create(**d)
+
+    headers = {'Authorization': sid}
+
     url = urls.base + 'snakes/viper'
     assert requests.get(url).status_code == 404
 
     url = urls.base + 'sites/1/snakes/viper'
-    assert requests.get(url).status_code == 404
+    assert requests.get(url, headers=headers).status_code == 404
 
 
 def test_site_group_access():

@@ -36,6 +36,12 @@ def get_snake(name):
 get_snake.not_found_on_none = True
 
 
+def get_secure_snake(name):
+    return None
+get_secure_snake.not_found_on_none = True
+get_secure_snake.login_required = True
+
+
 def secure_multisite_echo(word, user: hug.directives.user=None):
     return '%s:%s' % (user.id, word) if user else word
 secure_echo.login_required = True
@@ -63,7 +69,7 @@ def setup_routes(factory):
 
     factory.get('/sites/{site_id}/secure-echo/{word}')(secure_multisite_echo)
     factory.get('/sites/{site_id}/echo-groups')(echo_multisite_groups)
-    factory.get('/sites/{site_id}/snakes/{name}')(get_snake)
+    factory.get('/sites/{site_id}/snakes/{name}')(get_secure_snake)
 
     # ar_handlers = (None, arlib.create, None, arlib.get, arlib.update, None)
     # factory.map_resource('/resttest/', handlers=ar_handlers)
