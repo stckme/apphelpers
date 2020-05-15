@@ -237,7 +237,10 @@ class APIFactory:
         if self.multi_site_enabled:
             f = extra_args_protector(f)
 
-        f = raise_not_found_on_none(self.access_wrapper(self.db_tr_wrapper(f)))
+        f = self.access_wrapper(self.db_tr_wrapper(raise_not_found_on_none(f)))
+        # NOTE: ^ wrapper ordering is important. access_wrapper needs request which
+        # others don't. If access_wrapper comes late in the order it won't be passed
+        # request parameter.
         return m(f)
 
     def get(self, path, *a, **k):
