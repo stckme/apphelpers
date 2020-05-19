@@ -36,7 +36,7 @@ def get_snake(name):
 get_snake.not_found_on_none = True
 
 
-def get_secure_snake(name):
+def get_secure_snake(site_id, name):
     return None
 get_secure_snake.not_found_on_none = True
 get_secure_snake.login_required = True
