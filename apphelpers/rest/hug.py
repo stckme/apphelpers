@@ -47,13 +47,6 @@ def domain(default=None, request=None, **kwargs):
     return request.headers['HOST']
 
 
-@hug.directive()
-def sub_domain(default=None, request=None, **kwargs):
-    parts = request.headers['HOST'].split('.')
-    if len(parts) > 2:
-        return parts[0]
-
-
 @dataclass
 class User:
     sid: str=None
