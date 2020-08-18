@@ -42,6 +42,11 @@ def user_email(default=None, request=None, **kwargs):
     return request.context['user'].email
 
 
+@hug.directive()
+def domain(default=None, request=None, **kwargs):
+    return request.headers['HOST']
+
+
 @dataclass
 class User:
     sid: str=None
