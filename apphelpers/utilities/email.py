@@ -26,7 +26,7 @@ def send_email(
 
     msg["Subject"] = subject
     msg["From"] = sender
-    msg["To"] = recipient
+    msg["To"] = ', '.join(recipient)
     if bcc:
         msg["bcc"] = bcc
     if reply_to:
@@ -44,6 +44,6 @@ def send_email(
     if settings.MD_USERNAME:
         s.login(settings.MD_USERNAME, settings.MD_KEY)
 
-    s.sendmail(msg["From"], msg["To"], msg.as_string())
+    s.sendmail(msg["From"], recipient, msg.as_string())
 
     s.quit()
