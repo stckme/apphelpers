@@ -44,6 +44,6 @@ def send_email(
     if settings.MD_USERNAME:
         s.login(settings.MD_USERNAME, settings.MD_KEY)
 
-    s.sendmail(msg["From"], recipients, msg.as_string())
+    s.sendmail(sender, recipients, msg.as_string())
 
     s.quit()
