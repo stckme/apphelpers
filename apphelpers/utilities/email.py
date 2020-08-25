@@ -9,7 +9,7 @@ from converge import settings
 
 
 def send_email(
-    sender, recipient, subject, text=None, html=None, images=[], reply_to=None, bcc=None
+    sender, recipients, subject, text=None, html=None, images=[], reply_to=None, bcc=None
 ):
     """
     text: text message. If html is provided and not text, text will be auto generated
@@ -26,7 +26,7 @@ def send_email(
 
     msg["Subject"] = subject
     msg["From"] = sender
-    msg["To"] = recipient
+    msg["To"] = ', '.join(recipients)
     if bcc:
         msg["bcc"] = bcc
     if reply_to:
@@ -44,6 +44,6 @@ def send_email(
     if settings.MD_USERNAME:
         s.login(settings.MD_USERNAME, settings.MD_KEY)
 
-    s.sendmail(msg["From"], msg["To"], msg.as_string())
+    s.sendmail(sender, recipients, msg.as_string())
 
     s.quit()
