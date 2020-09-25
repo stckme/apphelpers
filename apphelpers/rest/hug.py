@@ -47,6 +47,11 @@ def domain(default=None, request=None, **kwargs):
     return request.headers['HOST']
 
 
+@hug.directive()
+def user_mobile(default=None, request=None, **kwargs):
+    return request.context['user'].mobile
+
+
 @dataclass
 class User:
     sid: str=None
@@ -54,6 +59,7 @@ class User:
     name: str=None
     groups: tuple=()
     email: str=None
+    mobile: str=None
     site_groups: dict=None
 
     def to_dict(self):
@@ -67,20 +73,24 @@ def setup_strict_context_setter(sessions):
 
     def set_context(token):
 
-        uid, groups, name, email, site_groups = None, [], '', None, {}
+        uid, groups, name, email, mobile, site_groups = None, [], '', None, None, {}
 
         if token:
             try:
-                session = sessions.get(token, ['uid', 'name', 'groups', 'email', 'site_groups'])
-                uid, name, groups, email, site_groups = (
+                session = sessions.get(
+                    token,
+                    ['uid', 'name', 'groups', 'email', 'mobile', 'site_groups']
+                )
+                uid, name, groups, email, mobile, site_groups = (
                     session['uid'], session['name'], session['groups'],
-                    session['email'], session['site_groups']
+                    session['email'], session['mobile'], session['site_groups']
                 )
             except InvalidSessionError:
                 raise HTTPUnauthorized('Invalid or expired session')
 
         return User(
-            sid=token, id=uid, name=name, groups=groups, email=email, site_groups=site_groups
+            sid=token, id=uid, name=name, groups=groups,
+            email=email, mobile=mobile, site_groups=site_groups
         )
 
     return set_context
@@ -97,16 +107,20 @@ def setup_context_setter(sessions):
         token = request.get_header('Authorization')
         if token:
             try:
-                session = sessions.get(token, ['uid', 'name', 'groups', 'email', 'site_groups'])
-                uid, name, groups, email, site_groups = (
+                session = sessions.get(
+                    token,
+                    ['uid', 'name', 'groups', 'email', 'mobile', 'site_groups']
+                )
+                uid, name, groups, email, mobile, site_groups = (
                     session['uid'], session['name'], session['groups'],
-                    session['email'], session['site_groups']
+                    session['email'], session['mobile'], session['site_groups']
                 )
             except InvalidSessionError:
                 pass
 
         request.context['user'] = User(
-            sid=token, id=uid, name=name, groups=groups, email=email, site_groups=site_groups
+            sid=token, id=uid, name=name, groups=groups,
+            email=email, mobile=mobile, site_groups=site_groups
         )
     return set_context
 
