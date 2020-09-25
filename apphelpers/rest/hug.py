@@ -103,7 +103,7 @@ def setup_context_setter(sessions):
         Only sets context based on session.
         Does not raise any error
         """
-        uid, groups, name, email, site_groups = None, [], '', None, {}
+        uid, groups, name, email, mobile, site_groups = None, [], '', None, None, {}
         token = request.get_header('Authorization')
         if token:
             try:
