@@ -4,12 +4,14 @@ import html2text
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
+from email.mime.base import MIMEBase
+from email import encoders
 
 from converge import settings
 
 
 def send_email(
-    sender, recipients, subject, text=None, html=None, images=[], reply_to=None, bcc=None
+    sender, recipients, subject, text=None, html=None, attachments=[], images=[], reply_to=None, bcc=None
 ):
     """
     text: text message. If html is provided and not text, text will be auto generated
@@ -39,7 +41,15 @@ def send_email(
         img_part = MIMEImage(img)
         img_part.add_header("Content-ID", "<" + cid + ">")
         msg.attach(img_part)
-
+    if attachments:
+        for file_path in attachments:
+            file_name = file_path.split('/')[-1]
+            file_part = MIMEBase('application', 'octet-stream')
+            attachment = open(file_path, "rb")
+            file_part.set_payload((attachment).read())
+            encoders.encode_base64(file_part)
+            file_part.add_header('Content-Disposition', "attachment; filename= %s" % file_name)
+            msg.attach(file_part)
     s = smtplib.SMTP(settings.MD_HOST, settings.MD_PORT)
     if settings.MD_USERNAME:
         s.login(settings.MD_USERNAME, settings.MD_KEY)
