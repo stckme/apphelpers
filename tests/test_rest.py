@@ -198,3 +198,10 @@ def test_request_access():
     resp = req.json()
     assert 'testheader'.upper() in resp['headers']
     assert resp['body'] == {'z': '1'}
+
+
+def test_raw_request():
+    url = urls.base + '/request-raw-body'
+    req = requests.post(url, data={'z': 1}, headers={'testheader': 'testheader-value'})
+    resp = req.json()
+    assert 'testheader'.upper() in resp['headers']
