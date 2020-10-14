@@ -235,7 +235,7 @@ class APIFactory:
     def build(self, method, method_args, method_kw, f):
         print(f'{method_args[0]} [{method.__name__.upper()}] => {f.__module__}:{f.__name__}')
         m = method(*method_args, **method_kw)
-        return self.access_wrapper(self.db_tr_wrapper(raise_not_found_on_none(m(f))))
+        return m(self.access_wrapper(self.db_tr_wrapper(raise_not_found_on_none(f))))
         # NOTE: ^ wrapper ordering is important. access_wrapper needs request which
         # others don't. If access_wrapper comes late in the order it won't be passed
         # request parameter.

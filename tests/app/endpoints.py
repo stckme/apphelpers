@@ -53,6 +53,10 @@ echo_multisite_groups.groups_required = [sitegroups.privileged.value]
 echo_multisite_groups.groups_forbidden = [sitegroups.forbidden.value]
 
 
+def process_request(request, body):
+    return {'body': body, 'headers': request.headers}
+
+
 def setup_routes(factory):
 
     factory.get('/echo/{word}')(echo)
@@ -70,6 +74,8 @@ def setup_routes(factory):
     factory.get('/sites/{site_id}/secure-echo/{word}')(secure_multisite_echo)
     factory.get('/sites/{site_id}/echo-groups')(echo_multisite_groups)
     factory.get('/sites/{site_id}/snakes/{name}')(get_secure_snake)
+
+    factory.post('/request-and-body')(process_request)
 
     # ar_handlers = (None, arlib.create, None, arlib.get, arlib.update, None)
     # factory.map_resource('/resttest/', handlers=ar_handlers)
