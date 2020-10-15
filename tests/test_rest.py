@@ -193,7 +193,7 @@ def test_site_group_access():
 
 
 def test_request_access():
-    url = urls.base + '/request-and-body'
+    url = urls.base + 'request-and-body'
     req = requests.post(url, data={'z': 1}, headers={'testheader': 'testheader-value'})
     resp = req.json()
     assert 'testheader'.upper() in resp['headers']
@@ -201,7 +201,7 @@ def test_request_access():
 
 
 def test_raw_request():
-    url = urls.base + '/request-raw-body'
+    url = urls.base + 'request-raw-body'
     req = requests.post(url, data={'z': 1}, headers={'testheader': 'testheader-value'})
     resp = req.json()
     assert 'testheader'.upper() in resp['headers']
