@@ -1,4 +1,5 @@
 import inspect
+import os
 from dataclasses import dataclass, asdict
 from functools import wraps
 from falcon import HTTPUnauthorized, HTTPForbidden, HTTPNotFound
@@ -9,6 +10,20 @@ import hug.introspect as introspect
 from apphelpers.db.peewee import dbtransaction
 from apphelpers.errors import InvalidSessionError
 from apphelpers.sessions import SessionDBHandler
+
+from honeybadger import Honeybadger
+
+
+# Optional Honeybadger integration. It will kick in
+# only if HONEYBADGER_API_KEY environment variable is set
+hb = None
+API_KEY = os.environ.get('HONEYBADGER_API_KEY', None)
+if API_KEY:
+    print("Setting up Honeybadger")
+    hb = Honeybadger()
+    hb.configure(api_key=API_KEY)
+else:
+    print("Honeybadger not set, because not API_KEY was set.")
 
 
 def phony(f):
@@ -23,6 +38,20 @@ def raise_not_found_on_none(f):
             if ret is None:
                 raise HTTPNotFound('four o four')
             return ret
+        return wrapper
+    return f
+
+
+def notify_honeybadger(f):
+    if hb:
+        @wraps(f)
+        def wrapper(*ar, **kw):
+            try:
+                ret = f(*ar, **kw)
+                return ret
+            except Exception as e:
+                hb.notify(e)
+                raise e
         return wrapper
     return f
 
@@ -235,7 +264,10 @@ class APIFactory:
     def build(self, method, method_args, method_kw, f):
         print(f'{method_args[0]} [{method.__name__.upper()}] => {f.__module__}:{f.__name__}')
         m = method(*method_args, **method_kw)
-        f = self.access_wrapper(self.db_tr_wrapper(raise_not_found_on_none(f)))
+        f = self.access_wrapper(
+            notify_honeybadger(
+                self.db_tr_wrapper(
+                    raise_not_found_on_none(f))))
         # NOTE: ^ wrapper ordering is important. access_wrapper needs request which
         # others don't. If access_wrapper comes late in the order it won't be passed
         # request parameter.
