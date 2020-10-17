@@ -1,10 +1,10 @@
 import inspect
 import os
 from dataclasses import dataclass, asdict
-from functools import wraps
 from falcon import HTTPUnauthorized, HTTPForbidden, HTTPNotFound
 
 import hug
+from hug.decorators import wraps
 import hug.introspect as introspect
 
 from apphelpers.db.peewee import dbtransaction
@@ -271,7 +271,6 @@ class APIFactory:
         # NOTE: ^ wrapper ordering is important. access_wrapper needs request which
         # others don't. If access_wrapper comes late in the order it won't be passed
         # request parameter.
-        return m(f)
 
     def get(self, path, *a, **k):
         def _wrapper(f):

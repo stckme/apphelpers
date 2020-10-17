@@ -3,13 +3,18 @@ import datetime
 import logging
 import os
 
-from functools import wraps
 from enum import Enum
 
 from peewee import Model, Field
 from playhouse.pool import PooledPostgresqlExtDatabase
 from playhouse.shortcuts import model_to_dict
 from playhouse.postgres_ext import DateTimeTZField
+
+
+try:
+    from hug.decorators import wraps
+except ModuleNotFoundError:
+    from functools import wraps
 
 
 def set_peewee_debug():
