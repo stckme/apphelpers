@@ -14,18 +14,6 @@ from apphelpers.sessions import SessionDBHandler
 from honeybadger import Honeybadger
 
 
-# Optional Honeybadger integration. It will kick in
-# only if HONEYBADGER_API_KEY environment variable is set
-hb = None
-API_KEY = os.environ.get('HONEYBADGER_API_KEY', None)
-if API_KEY:
-    print("Setting up Honeybadger")
-    hb = Honeybadger()
-    hb.configure(api_key=API_KEY)
-else:
-    print("Honeybadger not set, because not API_KEY was set.")
-
-
 def phony(f):
     return f
 
@@ -42,7 +30,7 @@ def raise_not_found_on_none(f):
     return f
 
 
-def notify_honeybadger(f):
+def notify_honeybadger(f, hb):
     if hb:
         @wraps(f)
         def wrapper(*ar, **kw):
@@ -156,6 +144,19 @@ def setup_context_setter(sessions):
 
 class APIFactory:
 
+    def setup_error_monitoring(self, api_key=None):
+        # Optional Honeybadger integration. It will kick in
+        # only if HONEYBADGER_API_KEY environment variable is set
+        if not api_key:
+            api_key = os.environ.get('HONEYBADGER_API_KEY', None)
+
+        if api_key:
+            print("Setting up Honeybadger")
+            self.hb = Honeybadger()
+            self.hb.configure(api_key=api_key)
+        else:
+            print("Honeybadger not set, api_key not available.")
+
     def __init__(self, router, urls_prefix=''):
         self.router = router
         self.db_tr_wrapper = phony
@@ -164,6 +165,8 @@ class APIFactory:
         self.multi_site_enabled = False
         self.site_identifier = None
         self.urls_prefix = urls_prefix
+        self.hb = None
+        self.setup_error_monitoring()
 
     def enable_multi_site(self, site_identifier):
         self.multi_site_enabled = True
@@ -267,10 +270,11 @@ class APIFactory:
         f = self.access_wrapper(
             notify_honeybadger(
                 self.db_tr_wrapper(
-                    raise_not_found_on_none(f))))
+                    raise_not_found_on_none(f)), self.hb))
         # NOTE: ^ wrapper ordering is important. access_wrapper needs request which
         # others don't. If access_wrapper comes late in the order it won't be passed
         # request parameter.
+        return m(f)
 
     def get(self, path, *a, **k):
         def _wrapper(f):
