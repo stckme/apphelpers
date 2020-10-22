@@ -159,7 +159,6 @@ class APIFactory:
         self.site_identifier = None
         self.urls_prefix = urls_prefix
         self.hb = None
-        self.setup_error_monitoring()
 
     def enable_multi_site(self, site_identifier):
         self.multi_site_enabled = True
