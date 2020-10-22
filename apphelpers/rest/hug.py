@@ -30,7 +30,7 @@ def raise_not_found_on_none(f):
     return f
 
 
-def notify_honeybadger(f, hb):
+def honeybadger_wrapper(f, hb):
     if hb:
         @wraps(f)
         def wrapper(*ar, **kw):
@@ -38,6 +38,7 @@ def notify_honeybadger(f, hb):
                 ret = f(*ar, **kw)
                 return ret
             except Exception as e:
+                print("Debug: Notifying Honeybadger")
                 hb.notify(e)
                 raise e
         return wrapper
@@ -144,18 +145,10 @@ def setup_context_setter(sessions):
 
 class APIFactory:
 
-    def setup_error_monitoring(self, api_key=None):
-        # Optional Honeybadger integration. It will kick in
-        # only if HONEYBADGER_API_KEY environment variable is set
-        if not api_key:
-            api_key = os.environ.get('HONEYBADGER_API_KEY', None)
-
-        if api_key:
-            print("Setting up Honeybadger")
-            self.hb = Honeybadger()
-            self.hb.configure(api_key=api_key)
-        else:
-            print("Honeybadger not set, api_key not available.")
+    def setup_honeybadger_monitoring(self, api_key):
+        print("Info: Setting up Honeybadger")
+        self.hb = Honeybadger()
+        self.hb.configure(api_key=api_key)
 
     def __init__(self, router, urls_prefix=''):
         self.router = router
@@ -268,7 +261,7 @@ class APIFactory:
         print(f'{method_args[0]} [{method.__name__.upper()}] => {f.__module__}:{f.__name__}')
         m = method(*method_args, **method_kw)
         f = self.access_wrapper(
-            notify_honeybadger(
+            honeybadger_wrapper(
                 self.db_tr_wrapper(
                     raise_not_found_on_none(f)), self.hb))
         # NOTE: ^ wrapper ordering is important. access_wrapper needs request which
