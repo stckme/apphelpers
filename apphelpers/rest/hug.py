@@ -1,10 +1,8 @@
-import inspect
 from dataclasses import dataclass, asdict
 from falcon import HTTPUnauthorized, HTTPForbidden, HTTPNotFound
 
 import hug
 from hug.decorators import wraps
-import hug.introspect as introspect
 
 from apphelpers.db.peewee import dbtransaction
 from apphelpers.errors import InvalidSessionError
