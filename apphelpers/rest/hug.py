@@ -1,5 +1,4 @@
 import inspect
-import os
 from dataclasses import dataclass, asdict
 from falcon import HTTPUnauthorized, HTTPForbidden, HTTPNotFound
 
@@ -30,19 +29,22 @@ def raise_not_found_on_none(f):
     return f
 
 
-def honeybadger_wrapper(f, hb):
-    if hb:
+def honeybadger_wrapper(hb):
+    """
+    wrapper that executes the function in a try/except
+    If an exception occurs, it is first reported to Honeybadger
+    """
+    def wrapper(f):
         @wraps(f)
-        def wrapper(*ar, **kw):
+        def f_wrapped(*args, **kw):
             try:
-                ret = f(*ar, **kw)
+                ret = f(*args, **kw)
                 return ret
             except Exception as e:
-                print("Debug: Notifying Honeybadger")
                 hb.notify(e)
                 raise e
-        return wrapper
-    return f
+        return f_wrapped
+    return wrapper
 
 
 @hug.directive()
@@ -145,11 +147,6 @@ def setup_context_setter(sessions):
 
 class APIFactory:
 
-    def setup_honeybadger_monitoring(self, api_key):
-        print("Info: Setting up Honeybadger")
-        self.hb = Honeybadger()
-        self.hb.configure(api_key=api_key)
-
     def __init__(self, router, urls_prefix=''):
         self.router = router
         self.db_tr_wrapper = phony
@@ -158,7 +155,7 @@ class APIFactory:
         self.multi_site_enabled = False
         self.site_identifier = None
         self.urls_prefix = urls_prefix
-        self.hb = None
+        self.honeybadger_wrapper = phony
 
     def enable_multi_site(self, site_identifier):
         self.multi_site_enabled = True
@@ -166,6 +163,12 @@ class APIFactory:
 
     def setup_db_transaction(self, db):
         self.db_tr_wrapper = dbtransaction(db)
+
+    def setup_honeybadger_monitoring(self, api_key):
+        print("Info: Setting up Honeybadger")
+        hb = Honeybadger()
+        hb.configure(api_key=api_key)
+        self.honeybadger_wrapper = honeybadger_wrapper(hb)
 
     def setup_session_db(self, sessiondb_conn):
         """
@@ -260,9 +263,9 @@ class APIFactory:
         print(f'{method_args[0]} [{method.__name__.upper()}] => {f.__module__}:{f.__name__}')
         m = method(*method_args, **method_kw)
         f = self.access_wrapper(
-            honeybadger_wrapper(
+            self.honeybadger_wrapper(
                 self.db_tr_wrapper(
-                    raise_not_found_on_none(f)), self.hb))
+                    raise_not_found_on_none(f))))
         # NOTE: ^ wrapper ordering is important. access_wrapper needs request which
         # others don't. If access_wrapper comes late in the order it won't be passed
         # request parameter.
