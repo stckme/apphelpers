@@ -3,12 +3,11 @@ from falcon import HTTPUnauthorized, HTTPForbidden, HTTPNotFound
 
 import hug
 from hug.decorators import wraps
+from honeybadger import Honeybadger
 
 from apphelpers.db.peewee import dbtransaction
 from apphelpers.errors import InvalidSessionError
 from apphelpers.sessions import SessionDBHandler
-
-from honeybadger import Honeybadger
 
 
 def phony(f):
