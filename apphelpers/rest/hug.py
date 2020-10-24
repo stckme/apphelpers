@@ -1,10 +1,9 @@
-import inspect
 from dataclasses import dataclass, asdict
 from falcon import HTTPUnauthorized, HTTPForbidden, HTTPNotFound
 
 import hug
 from hug.decorators import wraps
-import hug.introspect as introspect
+from honeybadger import Honeybadger
 
 from apphelpers.db.peewee import dbtransaction
 from apphelpers.errors import InvalidSessionError
@@ -25,6 +24,24 @@ def raise_not_found_on_none(f):
             return ret
         return wrapper
     return f
+
+
+def honeybadger_wrapper(hb):
+    """
+    wrapper that executes the function in a try/except
+    If an exception occurs, it is first reported to Honeybadger
+    """
+    def wrapper(f):
+        @wraps(f)
+        def f_wrapped(*args, **kw):
+            try:
+                ret = f(*args, **kw)
+                return ret
+            except Exception as e:
+                hb.notify(e)
+                raise e
+        return f_wrapped
+    return wrapper
 
 
 @hug.directive()
@@ -135,6 +152,7 @@ class APIFactory:
         self.multi_site_enabled = False
         self.site_identifier = None
         self.urls_prefix = urls_prefix
+        self.honeybadger_wrapper = phony
 
     def enable_multi_site(self, site_identifier):
         self.multi_site_enabled = True
@@ -142,6 +160,12 @@ class APIFactory:
 
     def setup_db_transaction(self, db):
         self.db_tr_wrapper = dbtransaction(db)
+
+    def setup_honeybadger_monitoring(self, api_key):
+        print("Info: Setting up Honeybadger")
+        hb = Honeybadger()
+        hb.configure(api_key=api_key)
+        self.honeybadger_wrapper = honeybadger_wrapper(hb)
 
     def setup_session_db(self, sessiondb_conn):
         """
@@ -235,10 +259,14 @@ class APIFactory:
     def build(self, method, method_args, method_kw, f):
         print(f'{method_args[0]} [{method.__name__.upper()}] => {f.__module__}:{f.__name__}')
         m = method(*method_args, **method_kw)
-        return m(self.access_wrapper(self.db_tr_wrapper(raise_not_found_on_none(f))))
+        f = self.access_wrapper(
+            self.honeybadger_wrapper(
+                self.db_tr_wrapper(
+                    raise_not_found_on_none(f))))
         # NOTE: ^ wrapper ordering is important. access_wrapper needs request which
         # others don't. If access_wrapper comes late in the order it won't be passed
         # request parameter.
+        return m(f)
 
     def get(self, path, *a, **k):
         def _wrapper(f):
