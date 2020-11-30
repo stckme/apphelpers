@@ -3,11 +3,13 @@ from falcon import HTTPUnauthorized, HTTPForbidden, HTTPNotFound
 
 import hug
 from hug.decorators import wraps
-from honeybadger import Honeybadger
+from honeybadger import honeybadger, Honeybadger
+from honeybadger.utils import filter_dict
 
 from apphelpers.db.peewee import dbtransaction
 from apphelpers.errors import InvalidSessionError
 from apphelpers.sessions import SessionDBHandler
+from converge import settings
 
 
 def phony(f):
@@ -33,12 +35,17 @@ def honeybadger_wrapper(hb):
     """
     def wrapper(f):
         @wraps(f)
-        def f_wrapped(*args, **kw):
+        def f_wrapped(request=None, *args, **kw):
             try:
                 ret = f(*args, **kw)
                 return ret
             except Exception as e:
-                hb.notify(e)
+                hb.notify(
+                    e,
+                    context={
+                        'kwargs': filter_dict(kw, settings.HB_PARAM_FILTERS),
+                        'url': request.url,
+                        'user_agent': request.user_agent})
                 raise e
         return f_wrapped
     return wrapper
