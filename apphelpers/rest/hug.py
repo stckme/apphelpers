@@ -35,7 +35,7 @@ def honeybadger_wrapper(hb):
     """
     def wrapper(f):
         @wraps(f)
-        def f_wrapped(request=None, *args, **kw):
+        def f_wrapped(*args, **kw):
             try:
                 ret = f(*args, **kw)
                 return ret
@@ -44,8 +44,7 @@ def honeybadger_wrapper(hb):
                     e,
                     context={
                         'kwargs': filter_dict(kw, settings.HB_PARAM_FILTERS),
-                        'url': request.url,
-                        'user_agent': request.user_agent})
+                        'func': f.__name__})
                 raise e
         return f_wrapped
     return wrapper
