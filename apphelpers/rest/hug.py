@@ -3,11 +3,15 @@ from falcon import HTTPUnauthorized, HTTPForbidden, HTTPNotFound
 
 import hug
 from hug.decorators import wraps
-from honeybadger import Honeybadger
 
 from apphelpers.db.peewee import dbtransaction
 from apphelpers.errors import InvalidSessionError
 from apphelpers.sessions import SessionDBHandler
+from converge import settings
+
+if settings.get('HONEYBADGER_API_KEY'):
+    from honeybadger import honeybadger, Honeybadger
+    from honeybadger.utils import filter_dict
 
 
 def phony(f):
@@ -36,10 +40,16 @@ def honeybadger_wrapper(hb):
         def f_wrapped(*args, **kw):
             try:
                 ret = f(*args, **kw)
-                return ret
             except Exception as e:
-                hb.notify(e)
+                hb.notify(
+                    e,
+                    context={
+                        'func': f.__name__,
+                        'kwargs': filter_dict(kw, settings.HB_PARAM_FILTERS)
+                    }
+                )
                 raise e
+            return ret
         return f_wrapped
     return wrapper
 
@@ -161,7 +171,12 @@ class APIFactory:
     def setup_db_transaction(self, db):
         self.db_tr_wrapper = dbtransaction(db)
 
-    def setup_honeybadger_monitoring(self, api_key):
+    def setup_honeybadger_monitoring(self):
+        api_key = settings.HONEYBADGER_API_KEY
+        if not api_key:
+            print("Info: Honeybadger API KEY not found. Honeybadger not set")
+            return
+
         print("Info: Setting up Honeybadger")
         hb = Honeybadger()
         hb.configure(api_key=api_key)
