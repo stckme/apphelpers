@@ -9,7 +9,7 @@ from apphelpers.errors import InvalidSessionError
 from apphelpers.sessions import SessionDBHandler
 from converge import settings
 
-if settings.HONEYBADGER_API_KEY:
+if settings.get('HONEYBADGER_API_KEY'):
     from honeybadger import honeybadger, Honeybadger
     from honeybadger.utils import filter_dict
 
@@ -40,7 +40,6 @@ def honeybadger_wrapper(hb):
         def f_wrapped(*args, **kw):
             try:
                 ret = f(*args, **kw)
-                return ret
             except Exception as e:
                 hb.notify(
                     e,
@@ -50,6 +49,7 @@ def honeybadger_wrapper(hb):
                     }
                 )
                 raise e
+            return ret
         return f_wrapped
     return wrapper
 
