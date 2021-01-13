@@ -1,6 +1,3 @@
-from hug import HTTPError
-from hug import get_http_status as status
-
 class BaseError(Exception):
     def __init__(self, **kw):
         for k, v in kw.items():
@@ -35,10 +32,3 @@ class InvalidSessionError(BaseError):
 class ConflictError(BaseError):
     code = 409
     msg = 'Duplicate resource'
-
-
-class UserAccountExistsError(HTTPError):
-
-    def __init__(self, username):
-        description = f'User Account already exists: {username}'
-        super().__init__(status.HTTP_109, description=description)
