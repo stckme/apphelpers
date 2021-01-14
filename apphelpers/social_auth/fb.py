@@ -1,7 +1,9 @@
 import os
 from requests_oauthlib import OAuth2Session
-
-from converge import settings
+try:
+    from converge import settings
+except:
+    import settings
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = 'True'
 
