@@ -1,12 +1,15 @@
 import json
 import jwt
 import requests
-from converge import settings
+try:
+    from converge import settings
+except:
+    import settings
 
 def fetch_info(token):
     jwks = requests.get('https://appleid.apple.com/auth/keys')
     public_keys = {}
-    for jwk in jwks['keys']:
+    for jwk in jwks.json()['keys']:
         kid = jwk['kid']
         public_keys[kid] = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(jwk))
 
