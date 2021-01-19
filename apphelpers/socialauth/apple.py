@@ -6,7 +6,6 @@ try:
 except:
     import settings
 
-
 def fetch_info(token):
     jwks = requests.get('https://appleid.apple.com/auth/keys')
     public_keys = {}
