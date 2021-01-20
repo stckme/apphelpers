@@ -10,7 +10,7 @@ from apphelpers.sessions import SessionDBHandler
 from converge import settings
 
 if settings.get('HONEYBADGER_API_KEY'):
-    from honeybadger import honeybadger, Honeybadger
+    from honeybadger import Honeybadger
     from honeybadger.utils import filter_dict
 
 

@@ -3,8 +3,6 @@ import _pickle as pickle
 import redis
 import hug
 
-import apphelpers.context as context
-
 from apphelpers.errors import InvalidSessionError
 
 

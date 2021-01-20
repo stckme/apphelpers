@@ -15,3 +15,5 @@ peewee
 redis
 gunicorn
 html2text
+requests_oauthlib
+PyJWT
