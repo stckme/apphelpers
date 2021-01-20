@@ -7,14 +7,14 @@ except:
     import settings
 
 def fetch_info(token):
-    jwks = requests.get('https://appleid.apple.com/auth/keys')
+    json_web_key_sets = requests.get('https://appleid.apple.com/auth/keys')
     public_keys = {}
-    for jwk in jwks.json()['keys']:
-        kid = jwk['kid']
-        public_keys[kid] = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(jwk))
+    for jwk in json_web_key_sets.json()['keys']:
+        key_id = jwk['kid']
+        public_keys[key_id] = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(jwk))
 
-    kid = jwt.get_unverified_header(token)['kid']
-    key = public_keys[kid]
+    key_id = jwt.get_unverified_header(token)['kid']
+    key = public_keys[key_id]
     payload = jwt.decode(token, key=key, audience=settings.APPLE_AUDIANCE, algorithms=['RS256'])
     return payload
 
