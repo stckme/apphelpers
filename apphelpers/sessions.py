@@ -13,6 +13,9 @@ rev_lookup_prefix = 'uid' + _SEP
 rev_lookup_key = lambda uid: rev_lookup_prefix + str(uid)
 
 
+THIRTY_DAYS = 30 * 24 * 60 * 60
+
+
 class SessionDBHandler:
 
     def __init__(self, rconn_params):
@@ -23,7 +26,7 @@ class SessionDBHandler:
 
     def create(
         self, uid='', groups=None, site_groups=None,
-        extras=None, ttl=(30 * 24 * 60 * 60)
+        extras=None, ttl=THIRTY_DAYS
     ):
         """
         groups: list
@@ -75,6 +78,10 @@ class SessionDBHandler:
     def get_for(self, uid):
         sid = self.uid2sid(uid)
         return self.get(sid) if sid else None
+
+    # Same default ttl as `create` function
+    def extend_timeout(self, sid, ttl=THIRTY_DAYS):
+        self.rconn.expire(session_key(sid), ttl)
 
     def sid2uidgroups(self, sid):
         """

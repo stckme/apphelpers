@@ -19,7 +19,7 @@ test_requirements = [ ]
 
 setup(
     author="Scroll Tech",
-    author_email='tech@scroll.in',
+    author_email='tech@scrollstack.com',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
@@ -40,6 +40,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/scrolltech/apphelpers',
-    version='0.15.0',
+    version='0.16.0',
     zip_safe=False,
 )
