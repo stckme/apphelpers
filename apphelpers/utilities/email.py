@@ -1,6 +1,7 @@
 import smtplib
 import html2text
 
+from email.utils import formataddr
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
@@ -9,7 +10,8 @@ from converge import settings
 
 
 def send_email(
-    sender, recipients, subject, text=None, html=None, images=[], reply_to=None, bcc=None
+    sender, recipients, subject, text=None, html=None,
+    images=[], reply_to=None, bcc=None, sender_name=None
 ):
     """
     text: text message. If html is provided and not text, text will be auto generated
@@ -25,7 +27,10 @@ def send_email(
     msg = MIMEMultipart("alternative")
 
     msg["Subject"] = subject
-    msg["From"] = sender
+    if sender_name:
+        msg["From"] = formataddr((sender_name, sender))
+    else:
+        msg["From"] = sender
     msg["To"] = ', '.join(recipients)
     if bcc:
         msg["bcc"] = bcc
