@@ -19,9 +19,8 @@ def send_email(
     images: list of cid and image paths.
         eg. [('logo', 'images/logo.png'), ('Bruce', 'images/bat.png')]
 
-    sender: can be sender email id e.g. 'abc@example.com' or combination of
-    sender and its header (header can be name of email id owner or can be simply a
-    text) e.g Honeybadger Notifications <tech@example.com>
+    sender: can be sender email string e.g. 'foo@example.com' or
+    list/tuple sender name and email  ('Foo', 'foo@example.com')
 
     """
     assert any((text, html)), "please provide html or text"
