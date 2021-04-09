@@ -11,13 +11,18 @@ from converge import settings
 
 def send_email(
     sender, recipients, subject, text=None, html=None,
-    images=[], reply_to=None, bcc=None, sender_name=None
+    images=[], reply_to=None, bcc=None
 ):
     """
     text: text message. If html is provided and not text, text will be auto generated
     html: html message
     images: list of cid and image paths.
         eg. [('logo', 'images/logo.png'), ('Bruce', 'images/bat.png')]
+
+    sender: can be sender email id e.g. 'abc@scrollstack.com' or combination of
+    sender and its header (header can be name of email id owner or can be simply a
+    text) e.g Honeybadger Notifications <tech@scrollstack.com>
+
     """
     assert any((text, html)), "please provide html or text"
 
@@ -27,10 +32,7 @@ def send_email(
     msg = MIMEMultipart("alternative")
 
     msg["Subject"] = subject
-    if sender_name:
-        msg["From"] = formataddr((sender_name, sender))
-    else:
-        msg["From"] = sender
+    msg["From"] = formataddr(sender) if isinstance(sender, (list, tuple)) else sender
     msg["To"] = ', '.join(recipients)
     if bcc:
         msg["bcc"] = bcc
