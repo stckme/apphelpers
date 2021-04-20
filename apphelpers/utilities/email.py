@@ -1,5 +1,6 @@
 import smtplib
 import html2text
+import os
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -43,7 +44,7 @@ def send_email(
         msg.attach(img_part)
     if attachments:
         for file_path in attachments:
-            file_name = file_path.split('/')[-1]
+            file_name = os.path.basename(file_path)
             file_part = MIMEBase('application', 'octet-stream')
             attachment = open(file_path, "rb")
             file_part.set_payload((attachment).read())
