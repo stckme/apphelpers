@@ -31,11 +31,17 @@ def send_email(
     if html and not text:
         text = html2text.html2text(html)
 
+    smtp_sender = from_header = sender
+    if isinstance(sender, (list, tuple)):
+        smtp_sender = sender[1]
+        from_header = formataddr(sender)
+
     msg = MIMEMultipart('alternative')
 
     msg['Subject'] = subject
-    msg['From'] = formataddr(sender) if isinstance(sender, (list, tuple)) else sender
+    msg['From'] = from_header
     msg['To'] = ', '.join(recipients)
+
     if bcc:
         msg['bcc'] = bcc
     if reply_to:
@@ -57,10 +63,11 @@ def send_email(
             encoders.encode_base64(file_part)
             file_part.add_header('Content-Disposition', f'attachment; filename= {file_name}')
             msg.attach(file_part)
+
     s = smtplib.SMTP(settings.MD_HOST, settings.MD_PORT)
     if settings.MD_USERNAME:
         s.login(settings.MD_USERNAME, settings.MD_KEY)
 
-    s.sendmail(sender, recipients, msg.as_string())
+    s.sendmail(smtp_sender, recipients, msg.as_string())
 
     s.quit()
