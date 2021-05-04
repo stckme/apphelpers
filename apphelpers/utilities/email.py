@@ -11,10 +11,23 @@ from email import encoders
 
 from converge import settings
 
+import smtplib
+import html2text
+import os
+
+from email.utils import formataddr
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
+from email.mime.base import MIMEBase
+from email import encoders
+
+from converge import settings
+
 
 def send_email(
-    sender, recipients, subject, text=None, html=None,
-    attachments=[], images=[], reply_to=None, bcc=[]
+        sender, recipients, subject, text=None, html=None,
+        attachments=None, images=None, reply_to=None, bcc=None
 ):
     """
     text: text message. If html is provided and not text, text will be auto generated
@@ -31,27 +44,28 @@ def send_email(
     if html and not text:
         text = html2text.html2text(html)
 
-    smtp_sender = from_header = sender
+    from_header = sender
     if isinstance(sender, (list, tuple)):
-        smtp_sender = sender[1]
         from_header = formataddr(sender)
 
     msg = MIMEMultipart('alternative')
-
     msg['Subject'] = subject
     msg['From'] = from_header
     msg['To'] = ', '.join(recipients)
 
+    if bcc:
+        msg['bcc'] = ', '.join(bcc)
     if reply_to:
         msg.add_header('reply-to', reply_to)
 
     msg.attach(MIMEText(text, 'plain', 'utf-8'))
     if html:
         msg.attach(MIMEText(html, 'html', 'utf-8'))
-    for cid, img in images:
-        img_part = MIMEImage(img)
-        img_part.add_header('Content-ID', '<' + cid + '>')
-        msg.attach(img_part)
+    if images:
+        for cid, img in images:
+            img_part = MIMEImage(img)
+            img_part.add_header('Content-ID', '<' + cid + '>')
+            msg.attach(img_part)
     if attachments:
         for file_path in attachments:
             file_name = os.path.basename(file_path)
@@ -66,6 +80,5 @@ def send_email(
     if settings.MD_USERNAME:
         s.login(settings.MD_USERNAME, settings.MD_KEY)
 
-    s.sendmail(smtp_sender, recipients + bcc, msg.as_string())
-
+    s.send_message(msg=msg)
     s.quit()
