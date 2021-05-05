@@ -11,19 +11,6 @@ from email import encoders
 
 from converge import settings
 
-import smtplib
-import html2text
-import os
-
-from email.utils import formataddr
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.image import MIMEImage
-from email.mime.base import MIMEBase
-from email import encoders
-
-from converge import settings
-
 
 def send_email(
         sender, recipients, subject, text=None, html=None,
