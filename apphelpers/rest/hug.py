@@ -13,6 +13,19 @@ if settings.get('HONEYBADGER_API_KEY'):
     from honeybadger import Honeybadger
     from honeybadger.utils import filter_dict
 
+mau_logger = None  # MAU => Monthly Active Users
+if settings.MAU_LOGGER.ENABLED:
+    import logging
+    from logging.handlers import SysLogHandler
+    level = settings.get('MAU_LOGGER.LEVEL', logging.INFO)
+    port = settings.MAU_LOGGER.PORT
+    mau_logger_tag = settings.MAU_LOGGER.TAG
+    rsyslog_server = settings.MAU_LOGGER.SYSLOG_SERVER
+    mau_logger = logging.getLogger('MAULogger')
+    mau_logger.setLevel(level)
+    handler = SysLogHandler(address=(rsyslog_server, port))
+    mau_logger.addHandler(handler)
+
 
 def phony(f):
     return f
@@ -142,6 +155,13 @@ def setup_context_setter(sessions):
                     session['uid'], session['name'], session['groups'],
                     session['email'], session['mobile'], session['site_groups']
                 )
+                if mau_logger:
+                    # To know why % style is used instead of f-strings,
+                    # search "Use lazy % formatting in logging"
+                    mau_logger.info('%s UID: %s | METHOD: %s | URL: %s',
+                                    mau_logger_tag, uid, request.method,
+                                    request.url)
+
             except InvalidSessionError:
                 pass
 
