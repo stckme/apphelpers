@@ -13,18 +13,29 @@ if settings.get('HONEYBADGER_API_KEY'):
     from honeybadger import Honeybadger
     from honeybadger.utils import filter_dict
 
-mau_logger = None  # MAU => Monthly Active Users
-if settings.MAU_LOGGER.ENABLED:
+api_logger = None
+api_logger_tag = ''
+
+if settings.API_LOGGER.ENABLED:
     import logging
     from logging.handlers import SysLogHandler
-    level = settings.get('MAU_LOGGER.LEVEL', logging.INFO)
-    port = settings.MAU_LOGGER.PORT
-    mau_logger_tag = settings.MAU_LOGGER.TAG
-    rsyslog_server = settings.MAU_LOGGER.SYSLOG_SERVER
-    mau_logger = logging.getLogger('MAULogger')
-    mau_logger.setLevel(level)
-    handler = SysLogHandler(address=(rsyslog_server, port))
-    mau_logger.addHandler(handler)
+    api_logger_tag = settings.API_LOGGER.TAG
+
+# This is global function because api_logger
+# is used inside setup_context_setter which is not part
+# of APIFactory
+def setup_api_logging():
+    global api_logger;
+    if settings.API_LOGGER.ENABLED:
+        level = settings.get('API_LOGGER.LEVEL', logging.INFO)
+        port = settings.API_LOGGER.PORT
+        rsyslog_server = settings.API_LOGGER.SYSLOG_SERVER
+        api_logger = logging.getLogger('APILogger')
+        api_logger.setLevel(level)
+        handler = SysLogHandler(address=(rsyslog_server, port))
+        api_logger.addHandler(handler)
+    else:
+        print('APILogger not enabled.')
 
 
 def phony(f):
@@ -155,12 +166,11 @@ def setup_context_setter(sessions):
                     session['uid'], session['name'], session['groups'],
                     session['email'], session['mobile'], session['site_groups']
                 )
-                if mau_logger:
+                if api_logger:
                     # To know why % style is used instead of f-strings,
                     # search "Use lazy % formatting in logging"
-                    mau_logger.info('%s UID: %s | METHOD: %s | URL: %s',
-                                    mau_logger_tag, uid, request.method,
-                                    request.url)
+                    api_logger.info('| %s | %s | %s | %s', api_logger_tag, uid,
+                                    request.method, request.url)
 
             except InvalidSessionError:
                 pass
