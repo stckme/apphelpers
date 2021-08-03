@@ -1,6 +1,5 @@
 from dataclasses import dataclass, asdict
 from falcon import HTTPUnauthorized, HTTPForbidden, HTTPNotFound
-
 import hug
 from hug.decorators import wraps
 
@@ -33,6 +32,8 @@ def setup_api_logging():
         api_logger = logging.getLogger('APILogger')
         api_logger.setLevel(level)
         handler = SysLogHandler(address=(rsyslog_server, port))
+        formatter = logging.Formatter('| %(asctime)s | %(message)s')
+        handler.setFormatter(formatter)
         api_logger.addHandler(handler)
     else:
         print('APILogger not enabled.')
@@ -169,7 +170,7 @@ def setup_context_setter(sessions):
                 if api_logger:
                     # To know why % style is used instead of f-strings,
                     # search "Use lazy % formatting in logging"
-                    api_logger.info('%s %s | %s | %s', api_logger_tag, uid,
+                    api_logger.info('%s | %s | %s | %s', api_logger_tag, uid,
                                     request.method, request.url)
 
             except InvalidSessionError:
