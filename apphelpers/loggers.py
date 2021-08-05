@@ -1,6 +1,6 @@
 import logging
 from logging.handlers import SysLogHandler
-
+from converge import settings
 
 def build_api_logger():
     level = settings.get('API_LOGGER.LEVEL', logging.INFO)
