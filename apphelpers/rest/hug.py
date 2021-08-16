@@ -144,9 +144,7 @@ def setup_context_setter(sessions):
                     session['email'], session['mobile'], session['site_groups']
                 )
                 if api_logger:
-                    # To know why % style is used instead of f-strings,
-                    # search "Use lazy % formatting in logging"
-                    api_logger.info('%s | %s | %s | %s',
+                    api_logger.info('{} | {} | {} | {}',
                                     settings.API_LOGGER.TAG, uid,
                                     request.method, request.url)
 
