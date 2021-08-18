@@ -144,9 +144,8 @@ def setup_context_setter(sessions):
                     session['email'], session['mobile'], session['site_groups']
                 )
                 if api_logger:
-                    api_logger.info('{} | {} | {} | {}',
-                                    settings.API_LOGGER.TAG, uid,
-                                    request.method, request.url)
+                    api_logger.info('{} | {} | {}',
+                                    uid, request.method, request.url)
 
             except InvalidSessionError:
                 pass

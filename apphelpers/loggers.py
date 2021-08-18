@@ -3,12 +3,13 @@ from loguru import logger as loguru_logger
 from converge import settings
 
 def build_api_logger():
-    level = settings.get('API_LOGGER.LEVEL', "INFO")
-    port = settings.API_LOGGER.PORT
-    rsyslog_server = settings.API_LOGGER.SYSLOG_SERVER
-    handler = SysLogHandler(address=(rsyslog_server, port))
-    loguru_logger.add(handler,
-                      format="| {time:YYYY-MM-DD HH:mm:ss} | {message}",
+    level = settings.API_LOGGER.LEVEL
+    handler = settings.API_LOGGER.FILEPATH
+    if handler:  # Else log to sys.stderr by default
+        rotation = settings.get('API_LOGGER.ROTATION', "1h")
+        retention = settings.get('API_LOGGER.RETENTION', "1 day")
+        loguru_logger.add(handler, retention=retention, rotation=rotation,
+                      format="{time:YYYY-MM-DD HH:mm:ss} | {message}",
                       level=level)
     return loguru_logger
 
