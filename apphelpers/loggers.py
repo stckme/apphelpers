@@ -6,11 +6,11 @@ def build_api_logger():
     level = settings.API_LOGGER.LEVEL
     handler = settings.API_LOGGER.FILEPATH
     if handler:  # Else log to sys.stderr by default
-        rotation = settings.get('API_LOGGER.ROTATION', "1h")
-        retention = settings.get('API_LOGGER.RETENTION', "1 day")
+        rotation = settings.API_LOGGER.ROTATION
+        retention = settings.API_LOGGER.RETENTION
         loguru_logger.add(handler, retention=retention, rotation=rotation,
-                      format="{time:YYYY-MM-DD HH:mm:ss} | {message}",
-                      level=level)
+                          format="{time:YYYY-MM-DD HH:mm:ss} | {message}",
+                          enqueue=True, level=level)
     return loguru_logger
 
 
