@@ -3,6 +3,9 @@ from loguru import logger as loguru_logger
 from converge import settings
 
 def build_api_logger():
+    """
+    Builds multiprocess-safe (hence loguru over stdlib logger) general purpose API logger
+    """
     level = settings.API_LOGGER.LEVEL
     handler = settings.API_LOGGER.FILEPATH
     if handler:  # Else log to sys.stderr by default
