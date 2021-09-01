@@ -1,6 +1,5 @@
 from dataclasses import dataclass, asdict
 from falcon import HTTPUnauthorized, HTTPForbidden, HTTPNotFound
-
 import hug
 from hug.decorators import wraps
 
@@ -8,6 +7,8 @@ from apphelpers.db.peewee import dbtransaction
 from apphelpers.errors import InvalidSessionError
 from apphelpers.sessions import SessionDBHandler
 from converge import settings
+
+from apphelpers.loggers import api_logger
 
 if settings.get('HONEYBADGER_API_KEY'):
     from honeybadger import Honeybadger
@@ -142,6 +143,10 @@ def setup_context_setter(sessions):
                     session['uid'], session['name'], session['groups'],
                     session['email'], session['mobile'], session['site_groups']
                 )
+                if api_logger:
+                    api_logger.info('{} | {} | {}',
+                                    uid, request.method, request.url)
+
             except InvalidSessionError:
                 pass
 
