@@ -2,6 +2,11 @@
 History
 =======
 
+0.19.1 (2021-10-07)
+-------------------
+
+* Report function args in honeybadger context
+
 0.9.2 (2019-05-20)
 ------------------
 
