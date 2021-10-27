@@ -46,6 +46,7 @@ def honeybadger_wrapper(hb):
                     e,
                     context={
                         'func': f.__name__,
+                        'args': args,
                         'kwargs': filter_dict(kw, settings.HB_PARAM_FILTERS)
                     }
                 )
