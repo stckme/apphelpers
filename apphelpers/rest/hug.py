@@ -42,15 +42,17 @@ def honeybadger_wrapper(hb):
             try:
                 ret = f(*args, **kw)
             except Exception as e:
-                hb.notify(
-                    e,
-                    context={
-                        'func': f.__name__,
-                        'args': args,
-                        'kwargs': filter_dict(kw, settings.HB_PARAM_FILTERS)
-                    }
-                )
-                raise e
+                try:
+                    hb.notify(
+                        e,
+                        context={
+                            'func': f.__name__,
+                            'args': args,
+                            'kwargs': filter_dict(kw, settings.HB_PARAM_FILTERS)
+                        }
+                    )
+                finally:
+                    raise e
             return ret
         return f_wrapped
     return wrapper
