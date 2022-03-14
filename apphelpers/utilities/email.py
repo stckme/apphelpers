@@ -64,8 +64,8 @@ def send_email(
             msg.attach(file_part)
 
     s = smtplib.SMTP(settings.MD_HOST, settings.MD_PORT)
-    s.starttls()
     if settings.MD_USERNAME:
+        s.starttls()
         s.login(settings.MD_USERNAME, settings.MD_KEY)
 
     s.send_message(msg=msg)
