@@ -41,6 +41,7 @@ def send_email(
         msg.attach(img_part)
 
     s = smtplib.SMTP(settings.MD_HOST, settings.MD_PORT)
+    s.starttls()
     if settings.MD_USERNAME:
         s.login(settings.MD_USERNAME, settings.MD_KEY)
 
