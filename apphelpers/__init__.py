@@ -3,5 +3,5 @@
 """Top-level package for Common helper libraries for Python Apps."""
 
 __author__ = """Scroll Tech"""
-__email__ = 'tech@scroll.in'
-__version__ = '0.10.6'
+__email__ = 'tech@scrollstack.com'
+__version__ = '0.19.4'

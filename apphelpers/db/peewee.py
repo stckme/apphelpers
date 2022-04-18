@@ -3,13 +3,18 @@ import datetime
 import logging
 import os
 
-from functools import wraps
 from enum import Enum
 
 from peewee import Model, Field
 from playhouse.pool import PooledPostgresqlExtDatabase
 from playhouse.shortcuts import model_to_dict
 from playhouse.postgres_ext import DateTimeTZField
+
+
+try:
+    from hug.decorators import wraps
+except ModuleNotFoundError:
+    from functools import wraps
 
 
 def set_peewee_debug():
@@ -104,3 +109,32 @@ def enumify(TheModel, name_field="name", val_field="id"):
 def dbc(db):
     pid = os.getpid()
     return "[%s]: %s:%s" % (pid, len(db._in_use), db.max_connections)
+
+
+
+def get_sub_models(base_model):
+    models = []
+    for sub_model in base_model.__subclasses__():
+        models.append(sub_model)
+        models.extend(get_sub_models(sub_model))
+    return models
+
+
+# Useful functions for test/dev setups
+# NOTE: For below functions, models is list of model classes sorted by dependency
+# Example: [Author, Publication, Post, Comment]
+
+def setup_db(db, models):
+    db.create_tables(models, safe=True)
+
+
+def setup_db_from_basemodel(db, basemodel):
+    models = get_sub_models(basemodel)
+    db.create_tables(models, safe=True)
+
+
+def destroy_db(models):
+    for o in models[::-1]:
+        if o.table_exists():
+            o.drop_table()
+            print('DROP: ' + o._meta.name)

@@ -11,7 +11,7 @@ with open('README.rst') as readme_file:
 with open('CHANGELOG.rst') as history_file:
     history = history_file.read()
 
-requirements = [ ]
+requirements = ['loguru']
 
 setup_requirements = [ ]
 
@@ -19,7 +19,7 @@ test_requirements = [ ]
 
 setup(
     author="Scroll Tech",
-    author_email='tech@scroll.in',
+    author_email='tech@scrollstack.com',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
@@ -40,6 +40,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/scrolltech/apphelpers',
-    version='0.10.6',
+    version='0.19.4',
     zip_safe=False,
 )

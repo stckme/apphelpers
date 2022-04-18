@@ -1,7 +1,11 @@
+from enum import Enum
 import hug
 import hug.directives
 
 from apphelpers.rest.hug import user_id
+
+from tests.app.models import globalgroups, sitegroups
+
 
 def echo(word, user: hug.directives.user=None):
     return '%s:%s' % (user.id, word) if user else word
@@ -14,8 +18,8 @@ secure_echo.login_required = True
 
 def echo_groups(user: hug.directives.user=None):
     return user.groups
-echo_groups.groups_required = ['access-group']
-echo_groups.groups_forbidden = ['forbidden-group']
+echo_groups.groups_required = [globalgroups.privileged.value]
+echo_groups.groups_forbidden = [globalgroups.forbidden.value]
 
 
 def add(nums: hug.types.multiple):
@@ -32,6 +36,32 @@ def get_snake(name):
 get_snake.not_found_on_none = True
 
 
+def get_secure_snake(site_id, name):
+    return None
+get_secure_snake.not_found_on_none = True
+get_secure_snake.login_required = True
+
+
+def secure_multisite_echo(word, user: hug.directives.user=None):
+    return '%s:%s' % (user.id, word) if user else word
+secure_echo.login_required = True
+
+
+def echo_multisite_groups(site_id: int, user: hug.directives.user=None):
+    return user.groups
+echo_multisite_groups.groups_required = [sitegroups.privileged.value]
+echo_multisite_groups.groups_forbidden = [sitegroups.forbidden.value]
+
+
+def process_request(request, body):
+    return {'body': body, 'headers': request.headers}
+
+
+def process_raw_request(request):
+    return {'raw_body': request.stream.read().decode(), 'headers': request.headers}
+process_raw_request.not_found_on_none = True
+
+
 def setup_routes(factory):
 
     factory.get('/echo/{word}')(echo)
@@ -45,6 +75,13 @@ def setup_routes(factory):
     factory.post('/me/uid')(get_my_uid)
 
     factory.get('/snakes/{name}')(get_snake)
+
+    factory.get('/sites/{site_id}/secure-echo/{word}')(secure_multisite_echo)
+    factory.get('/sites/{site_id}/echo-groups')(echo_multisite_groups)
+    factory.get('/sites/{site_id}/snakes/{name}')(get_secure_snake)
+
+    factory.post('/request-and-body')(process_request)
+    factory.post('/request-raw-body', parse_body=False)(process_raw_request)
 
     # ar_handlers = (None, arlib.create, None, arlib.get, arlib.update, None)
     # factory.map_resource('/resttest/', handlers=ar_handlers)

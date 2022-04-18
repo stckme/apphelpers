@@ -16,3 +16,5 @@ redis
 gunicorn
 html2text
 fastapi
+requests_oauthlib
+PyJWT

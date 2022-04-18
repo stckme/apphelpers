@@ -3,8 +3,6 @@ import _pickle as pickle
 import redis
 import hug
 
-import apphelpers.context as context
-
 from apphelpers.errors import InvalidSessionError
 
 
@@ -15,6 +13,9 @@ rev_lookup_prefix = 'uid' + _SEP
 rev_lookup_key = lambda uid: rev_lookup_prefix + str(uid)
 
 
+THIRTY_DAYS = 30 * 24 * 60 * 60
+
+
 class SessionDBHandler:
 
     def __init__(self, rconn_params):
@@ -23,9 +24,13 @@ class SessionDBHandler:
         """
         self.rconn = redis.Redis(**rconn_params)
 
-    def create(self, uid='', groups=None, extras=None, ttl=(30 * 24 * 60 * 60)):
+    def create(
+        self, uid='', groups=None, site_groups=None,
+        extras=None, ttl=THIRTY_DAYS
+    ):
         """
         groups: list
+        site_groups: dict
         extras (dict): each key-value pair of extras get stored into hset
         """
         if uid:
@@ -36,7 +41,9 @@ class SessionDBHandler:
         sid = secrets.token_urlsafe()
         key = session_key(sid)
 
-        session_dict = {'uid': uid, 'groups': groups or []}
+        if groups is None:
+            groups = []
+        session_dict = {'uid': uid, 'groups': groups, 'site_groups': site_groups}
         if extras:
             session_dict.update(extras)
         session = {k: pickle.dumps(v) for k, v in session_dict.items()}
@@ -72,6 +79,10 @@ class SessionDBHandler:
         sid = self.uid2sid(uid)
         return self.get(sid) if sid else None
 
+    # Same default ttl as `create` function
+    def extend_timeout(self, sid, ttl=THIRTY_DAYS):
+        self.rconn.expire(session_key(sid), ttl)
+
     def sid2uidgroups(self, sid):
         """
         => uid (int), groups (list)
@@ -93,9 +104,20 @@ class SessionDBHandler:
         self.rconn.hset(key, attribute, pickle.dumps(value))
         return True
 
+    def resync(self, sid, keyvalues):
+        removed_keys = list(self.get(sid).keys() - keyvalues.keys())
+        self.remove_from_session(sid, removed_keys)
+        self.update(sid, keyvalues)
+
+    def resync_for(self, uid, keyvalues):
+        keyvalues['uid'] = uid
+        sid = self.uid2sid(uid)
+        return self.resync(sid, keyvalues) if sid else None
+
     def remove_from_session(self, sid, keys):
         sk = session_key(sid)
-        self.rconn.hdel(sk, keys)
+        if keys:
+            self.rconn.hdel(sk, *keys)
         return True
 
     def destroy(self, sid):
@@ -111,9 +133,11 @@ class SessionDBHandler:
 
     def destroy_all(self):
         keys = self.rconn.keys(session_key('*'))
-        self.rconn.delete(*keys)
+        if keys:
+            self.rconn.delete(*keys)
         keys = self.rconn.keys(rev_lookup_prefix + '*')
-        self.rconn.delete(*keys)
+        if keys:
+            self.rconn.delete(*keys)
 
 
 def whoami(user: hug.directives.user):
