@@ -18,3 +18,4 @@ html2text
 fastapi
 requests_oauthlib
 PyJWT
+loguru

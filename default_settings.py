@@ -11,3 +11,7 @@ MD_HOST = '127.0.0.1'
 MD_PORT = 10000
 MD_USERNAME = None
 MD_KEY = ''
+
+
+class API_LOGGER:
+    ENABLED = False

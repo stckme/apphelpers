@@ -6,7 +6,7 @@ import os
 sys.path.append(os.getcwd() + '/..')
 
 from apphelpers.rest.fastapi import APIFactory
-from app.endpoints import setup_routes
+from tests.app.endpoints import setup_routes
 
 import settings
 
