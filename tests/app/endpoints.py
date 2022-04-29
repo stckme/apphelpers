@@ -68,7 +68,7 @@ def check_authorization(user, *args, **kw):
 
 def custom_authorization_echo(word):
     return word
-custom_authorization_echo.authorization_method = check_authorization
+custom_authorization_echo.authorizer = check_authorization
 
 
 def setup_routes(factory):
