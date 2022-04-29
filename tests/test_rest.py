@@ -14,6 +14,7 @@ class urls:
     echo_for_registered = base + 'secure-echo'
     echo_for_groups = base + 'echo-groups'
     echo_for_sitegroups = base + 'sites/1/echo-groups'
+    echo_for_custom_authorization = base + 'custom-authorization-echo'
 
 
 pid_path = 'tests/run/app.pid'
@@ -205,3 +206,20 @@ def test_raw_request():
     req = requests.post(url, data={'z': 1}, headers={'testheader': 'testheader-value'})
     resp = req.json()
     assert 'testheader'.upper() in resp['headers']
+
+
+def test_custom_authorization_access():
+    uid = 111
+    groups = []
+    d = dict(uid=uid, groups=groups)
+    sid = sessionsdb.create(**d)
+    headers = {'Authorization': sid}
+
+    url = urls.echo_for_custom_authorization + '/authorized'
+    assert requests.get(url).status_code == 401
+
+    url = urls.echo_for_custom_authorization + '/authorized'
+    assert requests.get(url, headers=headers).status_code == 200
+
+    url = urls.echo_for_custom_authorization + '/unauthorized'
+    assert requests.get(url, headers=headers).status_code == 403

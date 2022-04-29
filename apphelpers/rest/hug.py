@@ -208,8 +208,9 @@ class APIFactory:
             login_required = getattr(f, 'login_required', None)
             groups_required = getattr(f, 'groups_required', None)
             groups_forbidden = getattr(f, 'groups_forbidden', None)
+            authorizer = getattr(f, 'authorizer', None)
 
-            if login_required or groups_required or groups_forbidden:
+            if login_required or groups_required or groups_forbidden or authorizer:
 
                 @wraps(f)
                 def wrapper(request, *args, **kw):
@@ -229,6 +230,9 @@ class APIFactory:
                     if groups_forbidden and groups.intersection(groups_forbidden):
                         raise HTTPForbidden('Unauthorized access')
 
+                    if authorizer and not authorizer(user, *args, **kw):
+                        raise HTTPForbidden('Unauthorized access')
+
                     return f(*args, **kw)
             else:
                 wrapper = f
@@ -242,8 +246,9 @@ class APIFactory:
             login_required = getattr(f, 'login_required', None)
             groups_required = getattr(f, 'groups_required', None)
             groups_forbidden = getattr(f, 'groups_forbidden', None)
+            authorizer = getattr(f, 'authorizer', None)
 
-            if login_required or groups_required or groups_forbidden:
+            if login_required or groups_required or groups_forbidden or authorizer:
 
                 @wraps(f)
                 def wrapper(request, *args, **kw):
@@ -264,6 +269,9 @@ class APIFactory:
                         raise HTTPForbidden('Unauthorized access')
 
                     if groups_forbidden and groups.intersection(groups_forbidden):
+                        raise HTTPForbidden('Unauthorized access')
+
+                    if authorizer and not authorizer(user, *args, **kw):
                         raise HTTPForbidden('Unauthorized access')
 
                     return f(*args, **kw)

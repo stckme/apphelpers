@@ -62,6 +62,15 @@ def process_raw_request(request):
 process_raw_request.not_found_on_none = True
 
 
+def check_authorization(user, *args, **kw):
+    return kw['word'] == 'authorized'
+
+
+def custom_authorization_echo(word):
+    return word
+custom_authorization_echo.authorizer = check_authorization
+
+
 def setup_routes(factory):
 
     factory.get('/echo/{word}')(echo)
@@ -70,6 +79,7 @@ def setup_routes(factory):
     factory.get('/add')(add)
 
     factory.get('/secure-echo/{word}')(secure_echo)
+    factory.get('/custom-authorization-echo/{word}')(custom_authorization_echo)
     factory.get('/echo-groups')(echo_groups)
 
     factory.post('/me/uid')(get_my_uid)
