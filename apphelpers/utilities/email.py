@@ -1,6 +1,7 @@
-import smtplib
 import html2text
 import os
+import smtplib
+import ssl
 
 from email.utils import formataddr
 from email.mime.multipart import MIMEMultipart
@@ -10,6 +11,12 @@ from email.mime.base import MIMEBase
 from email import encoders
 
 from converge import settings
+
+
+ssl_default_context = ssl.create_default_context()
+# NOTE: reusable ssl context.
+# It could be safer to create it later for every connection but for efficiency
+# we are creating a reusable one here
 
 
 def send_email(
@@ -63,10 +70,9 @@ def send_email(
             file_part.add_header('Content-Disposition', f'attachment; filename= {file_name}')
             msg.attach(file_part)
 
-    s = smtplib.SMTP(settings.MD_HOST, settings.MD_PORT)
-    if settings.MD_USERNAME:
-        s.starttls()
-        s.login(settings.MD_USERNAME, settings.MD_KEY)
+    with smtplib.SMTP(settings.MD_HOST, settings.MD_PORT) as s:
+        if settings.MD_USERNAME:
+            s.starttls(ssl_default_context)
+            s.login(settings.MD_USERNAME, settings.MD_KEY)
 
-    s.send_message(msg=msg)
-    s.quit()
+        s.send_message(msg=msg)
