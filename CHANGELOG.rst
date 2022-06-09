@@ -2,6 +2,14 @@
 History
 =======
 
+0.21.1 (2022-06-09)
+-------------------
+* Fix for SMTP+SSL connection
+
+0.21.0 (2022-05-18)
+-------------------
+* applogger: general purpose application logging
+
 0.20.0 (2022-04-29)
 -------------------
 * Support for custom authorizaion
