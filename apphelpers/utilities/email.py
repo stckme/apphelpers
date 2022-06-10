@@ -13,12 +13,6 @@ from email import encoders
 from converge import settings
 
 
-ssl_default_context = ssl.create_default_context()
-# NOTE: reusable ssl context.
-# It could be safer to create it later for every connection but for efficiency
-# we are creating a reusable one here
-
-
 def send_email(
         sender, recipients, subject, text=None, html=None,
         attachments=None, images=None, reply_to=None, bcc=None
@@ -70,9 +64,12 @@ def send_email(
             file_part.add_header('Content-Disposition', f'attachment; filename= {file_name}')
             msg.attach(file_part)
 
+    context = ssl.create_default_context()
+
     with smtplib.SMTP(settings.MD_HOST, settings.MD_PORT) as s:
         if settings.MD_USERNAME:
-            s.starttls(ssl_default_context)
+            s.ehlo()
+            s.starttls(context=context)
             s.login(settings.MD_USERNAME, settings.MD_KEY)
 
         s.send_message(msg=msg)
