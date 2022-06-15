@@ -66,7 +66,7 @@ def send_email(
 
     context = ssl.create_default_context()
 
-    with smtplib.SMTP(settings.MD_HOST, settings.MD_PORT) as s:
+    with smtplib.SMTP(settings.MD_HOST, settings.MD_PORT,  timeout=3) as s:
         if settings.MD_USERNAME:
             s.ehlo()
             s.starttls(context=context)
