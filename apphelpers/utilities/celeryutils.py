@@ -50,26 +50,6 @@ class Celery(BaseCelery):
             .set(queue=queue),
         )
 
-    @staticmethod
-    def apply_async(countdown=0, retry=True, queue=""):
-        """Executes function asynchronously.
-        Not using apply_async means that the task will not be executed by a celery
-        worker, but in the current process instead just like a normal synchronous
-        function.
-        countdown -- executes in specified no of seconds from now.
-        retry -- configures retry behavior.
-        """
-
-        def wrap(f):
-            def wrapped_f(*args, **kwargs):
-                return f.apply_async(
-                    args, kwargs, countdown=countdown, retry=retry, queue=queue
-                )
-
-            return wrapped_f
-
-        return wrap
-
     def task_with_apply_async(self, countdown=0, retry=True, queue=None, **task_kwargs):
         """Executes function asynchronously.
         Not using apply_async means that the task will not be executed by a celery
