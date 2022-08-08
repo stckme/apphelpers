@@ -18,17 +18,17 @@ except ModuleNotFoundError:
 
 
 def set_peewee_debug():
-    logger = logging.getLogger('peewee')
+    logger = logging.getLogger("peewee")
     logger.addHandler(logging.StreamHandler())
     logger.setLevel(logging.DEBUG)
 
 
 class URLField(Field):
-    field_type = 'text'
+    field_type = "text"
 
     def python_value(self, value):
         value = value.lower()
-        if not value.startswith('http') or not '://' in value:
+        if not value.startswith("http") or not "://" in value:
             raise TypeError("Not a http URL: %s" % value)
         return value
 
@@ -68,6 +68,7 @@ def dbtransaction(db):
     wrapper that make db transactions automic
     note db connections are used only when it is needed (hence there is no usual connection open/close)
     """
+
     def wrapper(f):
         @wraps(f)
         def f_wrapped(*args, **kw):
@@ -79,7 +80,9 @@ def dbtransaction(db):
                 with db.atomic():
                     result = f(*args, **kw)
             return result
+
         return f_wrapped
+
     return wrapper
 
 
@@ -111,7 +114,6 @@ def dbc(db):
     return "[%s]: %s:%s" % (pid, len(db._in_use), db.max_connections)
 
 
-
 def get_sub_models(base_model):
     models = []
     for sub_model in base_model.__subclasses__():
@@ -123,6 +125,7 @@ def get_sub_models(base_model):
 # Useful functions for test/dev setups
 # NOTE: For below functions, models is list of model classes sorted by dependency
 # Example: [Author, Publication, Post, Comment]
+
 
 def setup_db(db, models):
     db.create_tables(models, safe=True)
@@ -137,4 +140,4 @@ def destroy_db(models):
     for o in models[::-1]:
         if o.table_exists():
             o.drop_table()
-            print('DROP: ' + o._meta.name)
+            print("DROP: " + o._meta.name)
