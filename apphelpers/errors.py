@@ -2,10 +2,13 @@ class BaseError(Exception):
     def __init__(self, **kw):
         for k, v in kw.items():
             setattr(self, k, v)
+
     def to_dict(self):
-        return {'msg': getattr(self, 'msg', ''),
-                'code': getattr(self, 'code', None),
-                'data': getattr(self, 'data', {})}
+        return {
+            "msg": getattr(self, "msg", ""),
+            "code": getattr(self, "code", None),
+            "data": getattr(self, "data", {}),
+        }
 
 
 class NotFoundError(BaseError):
@@ -17,7 +20,7 @@ class SecurityViolation(BaseError):
 
 
 class AccessDenied(BaseError):
-    msg = 'Access denied'
+    msg = "Access denied"
 
 
 class ValidationError(BaseError):
@@ -26,9 +29,9 @@ class ValidationError(BaseError):
 
 class InvalidSessionError(BaseError):
     code = 401
-    msg = 'Invalid session'
+    msg = "Invalid session"
 
 
 class ConflictError(BaseError):
     code = 409
-    msg = 'Duplicate resource'
+    msg = "Duplicate resource"

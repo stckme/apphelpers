@@ -4,12 +4,12 @@ from apphelpers.rest.hug import APIFactory
 
 
 def echo(word):
-    return {'word': word}
+    return {"word": word}
 
 
 def setup_routes(factory):
-    factory.get('/echo/{word}')(echo)
-    factory.post('/echo')(echo)
+    factory.get("/echo/{word}")(echo)
+    factory.post("/echo")(echo)
 
 
 def make_app():

@@ -6,10 +6,10 @@ import hug
 from apphelpers.errors import InvalidSessionError
 
 
-_SEP = ':'
-session_key = ('session' + _SEP).__add__
+_SEP = ":"
+session_key = ("session" + _SEP).__add__
 
-rev_lookup_prefix = 'uid' + _SEP
+rev_lookup_prefix = "uid" + _SEP
 rev_lookup_key = lambda uid: rev_lookup_prefix + str(uid)
 
 
@@ -17,7 +17,6 @@ THIRTY_DAYS = 30 * 24 * 60 * 60
 
 
 class SessionDBHandler:
-
     def __init__(self, rconn_params):
         """
         rconn_params: redis connection parameters
@@ -25,8 +24,7 @@ class SessionDBHandler:
         self.rconn = redis.Redis(**rconn_params)
 
     def create(
-        self, uid='', groups=None, site_groups=None,
-        extras=None, ttl=THIRTY_DAYS
+        self, uid="", groups=None, site_groups=None, extras=None, ttl=THIRTY_DAYS
     ):
         """
         groups: list
@@ -43,7 +41,7 @@ class SessionDBHandler:
 
         if groups is None:
             groups = []
-        session_dict = {'uid': uid, 'groups': groups, 'site_groups': site_groups}
+        session_dict = {"uid": uid, "groups": groups, "site_groups": site_groups}
         if extras:
             session_dict.update(extras)
         session = {k: pickle.dumps(v) for k, v in session_dict.items()}
@@ -87,8 +85,8 @@ class SessionDBHandler:
         """
         => uid (int), groups (list)
         """
-        session = self.get(sid, ['uid', 'groups'])
-        return session['uid'], session['groups']
+        session = self.get(sid, ["uid", "groups"])
+        return session["uid"], session["groups"]
 
     def update(self, sid, keyvalues):
         sk = session_key(sid)
@@ -110,7 +108,7 @@ class SessionDBHandler:
         self.update(sid, keyvalues)
 
     def resync_for(self, uid, keyvalues):
-        keyvalues['uid'] = uid
+        keyvalues["uid"] = uid
         sid = self.uid2sid(uid)
         return self.resync(sid, keyvalues) if sid else None
 
@@ -132,14 +130,16 @@ class SessionDBHandler:
         return self.destroy(sid) if sid else None
 
     def destroy_all(self):
-        keys = self.rconn.keys(session_key('*'))
+        keys = self.rconn.keys(session_key("*"))
         if keys:
             self.rconn.delete(*keys)
-        keys = self.rconn.keys(rev_lookup_prefix + '*')
+        keys = self.rconn.keys(rev_lookup_prefix + "*")
         if keys:
             self.rconn.delete(*keys)
 
 
 def whoami(user: hug.directives.user):
     return user.to_dict()
+
+
 whoami.login_required = True

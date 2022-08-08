@@ -2,9 +2,10 @@ import json
 
 
 class ReadOnlyCachedModel:
-    '''
+    """
     Read only cached model
-    '''
+    """
+
     connection = None
     ns = None
     key_fields = None
@@ -34,9 +35,10 @@ class ReadOnlyCachedModel:
 
 
 class ReadWriteCachedModel(ReadOnlyCachedModel):
-    '''
+    """
     Read/Write cached model
-    '''
+    """
+
     timeout = None
 
     @classmethod

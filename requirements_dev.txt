@@ -17,3 +17,5 @@ gunicorn
 html2text
 requests_oauthlib
 PyJWT
+black
+pre-commit
