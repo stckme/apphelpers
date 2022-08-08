@@ -4,7 +4,7 @@ History
 
 0.31.0 (2022-08-08)
 -------------------
-* Rename MD_* to SMTP_*
+* Rename Config directive MD_* to SMTP_*
 
 0.21.1 (2022-06-09)
 -------------------
