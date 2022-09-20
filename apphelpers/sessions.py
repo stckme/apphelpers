@@ -73,6 +73,10 @@ class SessionDBHandler:
         sid = self.rconn.get(rev_lookup_key(uid))
         return sid.decode() if sid else None
 
+    def sid2uid(self, sid):
+        session = self.get(sid, ["uid"])
+        return session["uid"]
+
     def get_for(self, uid):
         sid = self.uid2sid(uid)
         return self.get(sid) if sid else None
@@ -80,6 +84,8 @@ class SessionDBHandler:
     # Same default ttl as `create` function
     def extend_timeout(self, sid, ttl=THIRTY_DAYS):
         self.rconn.expire(session_key(sid), ttl)
+        uid = self.sid2uid(sid)
+        self.rconn.expire(rev_lookup_key(uid), ttl)
 
     def sid2uidgroups(self, sid):
         """
