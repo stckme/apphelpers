@@ -20,3 +20,5 @@ PyJWT
 black
 pre-commit
 fastapi
+pytest
+uvicorn

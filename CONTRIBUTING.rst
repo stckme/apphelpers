@@ -83,14 +83,20 @@ Ready to contribute? Here's how to set up `apphelpers` for local development.
    $ gunicorn tests.service:__hug_wsgi__
    $ nosetests -sxv tests
 
+6. When you're done making changes for fastapi, check that your changes pass flake8 and the
+   tests, including testing other Python versions with tox::
 
-6. Commit your changes and push your branch to GitHub::
+
+   $ uvicorn fastapi_tests.service:app --host 0.0.0.0 --port 5000
+   $ pytest -x  fastapi_tests
+
+7. Commit your changes and push your branch to GitHub::
 
     $ git add .
     $ git commit -m "Your detailed description of your changes."
     $ git push origin name-of-your-bugfix-or-feature
 
-7. Submit a pull request through the GitHub website.
+8. Submit a pull request through the GitHub website.
 
 Pull Request Guidelines
 -----------------------

@@ -1,3 +1,4 @@
+DEBUG = True
 DB_NAME = "defaultdb"
 DB_USER = "postgres"
 
