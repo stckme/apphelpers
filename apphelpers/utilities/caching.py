@@ -82,6 +82,11 @@ class ReadWriteCachedModel(ReadOnlyCachedModel):
         cls.connection.incr(key, amount)
 
     @classmethod
+    def decrement(cls, amount=1, **data):
+        key = cls.prefix_key(data)
+        cls.connection.decr(key, amount)
+
+    @classmethod
     def delete(cls, **data):
         key = cls.prefix_key(data)
         cls.connection.delete(key)
