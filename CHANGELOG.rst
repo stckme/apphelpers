@@ -3,7 +3,7 @@ History
 =======
 
 0.31.2 (2022-12-15)
----------
+-------------------
 * Implement ReadWriteCachedModel.decrement()
 
 0.31.1 (2022-09-20)
