@@ -1,7 +1,6 @@
 import http
 from functools import wraps
 
-from dataclasses import dataclass, asdict
 from requests import session
 from starlette.requests import Request
 from fastapi import APIRouter, FastAPI, HTTPException, Depends
@@ -15,12 +14,10 @@ from converge import settings
 
 from apphelpers.loggers import api_logger
 
+
 if settings.get("HONEYBADGER_API_KEY"):
     from honeybadger import Honeybadger
     from honeybadger.utils import filter_dict
-
-def phony(f):
-    return f
 
 
 def raise_not_found_on_none(f):
@@ -112,23 +109,6 @@ user_mobile = Depends(get_current_user_mobile)
 domain = Depends(get_current_domain)
 raw_body = Depends(get_raw_body)
 json_body = Depends(get_json_body)
-
-
-@dataclass
-class User:
-    sid: str = None
-    id: int = None
-    name: str = None
-    groups: tuple = ()
-    email: str = None
-    mobile: str = None
-    site_groups: dict = None
-
-    def to_dict(self):
-        return asdict(self)
-
-    def __bool__(self):
-        return bool(self.id)
 
 
 class SecureRouter(APIRoute):
