@@ -1,5 +1,5 @@
-from kombu import Queue
 from celery import Celery as BaseCelery
+from kombu import Queue
 
 
 class Celery(BaseCelery):
@@ -57,15 +57,38 @@ class Celery(BaseCelery):
         function.
         countdown -- executes in specified no of seconds from now.
         retry -- configures retry behavior.
+
+        Example:
+
+            @celery.task_with_apply_async(countdown=10, retry=False)
+            def add(x, y):
+                return x + y
+
+            # Asynchronously executes in 10 seconds
+            add(1, 2)
+
+            # Asynchronously executes in 20 seconds
+            add.with_(countdown=20)(1, 2)
         """
 
         def wrap(f):
             task = self.task(f, **task_kwargs)
 
-            def wrapped_f(*args, **kwargs):
-                return task.apply_async(
-                    args, kwargs, countdown=countdown, retry=retry, queue=queue
-                )
+            def with_(**dyn_task_kwargs):
+                with_kwargs = dict(countdown=countdown, retry=retry, queue=queue)
+                with_kwargs.update(dyn_task_kwargs)
+
+                def _wrapped_f(*args, **kwargs):
+                    return task.apply_async(
+                        args,
+                        kwargs,
+                        **with_kwargs,
+                    )
+
+                return _wrapped_f
+
+            wrapped_f = with_()
+            wrapped_f.with_ = with_
 
             return wrapped_f
 
