@@ -1,8 +1,9 @@
-import os
 import logging
+import os
 from logging.handlers import RotatingFileHandler
-from loguru import logger as loguru_logger
+
 from converge import settings
+from loguru import logger as loguru_logger
 
 
 def build_api_logger():
@@ -45,5 +46,10 @@ def build_app_logger(name="app", logfile="app.log", debug=True):
     return logger
 
 
-api_logger = build_api_logger() if settings.API_LOGGER.ENABLED else None
 app_logger = build_app_logger()
+app_logger.info(f"Running app in '{settings.APP_MODE}' mode")
+
+api_logger = None
+if settings.API_LOGGER.ENABLED:
+    api_logger = build_api_logger()
+    api_logger.info(f"Running api in '{settings.APP_MODE}' mode")
