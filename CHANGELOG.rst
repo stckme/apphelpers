@@ -2,6 +2,15 @@
 History
 =======
 
+0.31.2 (2022-12-15)
+-------------------
+* Implement ReadWriteCachedModel.decrement()
+
+0.31.1 (2022-09-20)
+-------------------
+* Extend sesion timeout fix for lookup key
+* Implement sessions.sid2uid()
+
 0.31.0 (2022-08-08)
 -------------------
 * Rename Config directive MD_* to SMTP_*
