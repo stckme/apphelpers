@@ -13,7 +13,6 @@ from apphelpers.errors import InvalidSessionError
 from apphelpers.sessions import SessionDBHandler
 from converge import settings
 
-from apphelpers.loggers import api_logger
 
 if settings.get("HONEYBADGER_API_KEY"):
     from honeybadger import Honeybadger
