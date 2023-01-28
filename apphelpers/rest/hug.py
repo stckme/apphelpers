@@ -1,22 +1,21 @@
-from dataclasses import asdict, dataclass
-
+from falcon import HTTPUnauthorized, HTTPForbidden, HTTPNotFound
 import hug
 from converge import settings
 from falcon import HTTPForbidden, HTTPNotFound, HTTPUnauthorized
 from hug.decorators import wraps
 
 from apphelpers.db.peewee import dbtransaction
-from apphelpers.errors import BaseError, InvalidSessionError
+from apphelpers.errors import InvalidSessionError
+from apphelpers.sessions import SessionDBHandler
+from converge import settings
+
+from apphelpers.rest.common import phony, User
 from apphelpers.loggers import api_logger
 from apphelpers.sessions import SessionDBHandler
 
 if settings.get("HONEYBADGER_API_KEY"):
     from honeybadger import Honeybadger
     from honeybadger.utils import filter_dict
-
-
-def phony(f):
-    return f
 
 
 def raise_not_found_on_none(f):
@@ -89,23 +88,6 @@ def domain(default=None, request=None, **kwargs):
 @hug.directive()
 def user_mobile(default=None, request=None, **kwargs):
     return request.context["user"].mobile
-
-
-@dataclass
-class User:
-    sid: str = None
-    id: int = None
-    name: str = None
-    groups: tuple = ()
-    email: str = None
-    mobile: str = None
-    site_groups: dict = None
-
-    def to_dict(self):
-        return asdict(self)
-
-    def __bool__(self):
-        return bool(self.id)
 
 
 def setup_strict_context_setter(sessions):

@@ -2,7 +2,6 @@ import http
 import inspect
 from functools import wraps
 
-from dataclasses import dataclass, asdict
 from starlette.requests import Request
 from fastapi import APIRouter, HTTPException, Depends
 
@@ -11,16 +10,14 @@ from fastapi.routing import APIRoute
 from apphelpers.db.peewee import dbtransaction
 from apphelpers.errors import InvalidSessionError
 from apphelpers.sessions import SessionDBHandler
+from apphelpers.rest.common import phony, User
 from converge import settings
+
 
 
 if settings.get("HONEYBADGER_API_KEY"):
     from honeybadger import Honeybadger
     from honeybadger.utils import filter_dict
-
-
-def phony(f):
-    return f
 
 
 def raise_not_found_on_none(f):
@@ -113,23 +110,6 @@ user_mobile = Depends(get_current_user_mobile)
 domain = Depends(get_current_domain)
 raw_body = Depends(get_raw_body)
 json_body = Depends(get_json_body)
-
-
-@dataclass
-class User:
-    sid: str = None
-    id: int = None
-    name: str = None
-    groups: tuple = ()
-    email: str = None
-    mobile: str = None
-    site_groups: dict = None
-
-    def to_dict(self):
-        return asdict(self)
-
-    def __bool__(self):
-        return bool(self.id)
 
 
 class SecureRouter(APIRoute):
