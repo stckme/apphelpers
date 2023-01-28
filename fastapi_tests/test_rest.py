@@ -84,15 +84,15 @@ def test_user_id():
 
     data = {'uid': None}
     resp = requests.post(url, json=data, headers=headers)
-    assert resp.json() == uid
+    assert resp.json() == data["uid"]
 
     data = {'uid': 1}  # invalid claim
     resp = requests.post(url, json=data, headers=headers)
-    assert resp.json() == uid
+    assert resp.json() == data["uid"]
 
     data = {'uid': uid}
     resp = requests.post(url, json=data, headers=headers)
-    assert resp.json() == uid
+    assert resp.json() == data["uid"]
 
 
 def test_group_access():
@@ -126,6 +126,6 @@ def test_group_access():
     assert requests.get(url, headers=headers).status_code == 200
     assert requests.get(url, headers=headers).json() == groups
 
-def test_not_found():
+def test_unauthorized():
     url = base_url + 'snakes/viper'
-    assert requests.get(url).status_code == 404
+    assert requests.get(url).status_code == 401

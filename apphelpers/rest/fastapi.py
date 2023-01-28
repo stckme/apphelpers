@@ -1,10 +1,10 @@
 import http
+import inspect
 from functools import wraps
 
 from dataclasses import dataclass, asdict
-from requests import session
 from starlette.requests import Request
-from fastapi import APIRouter, FastAPI, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends
 
 from fastapi.routing import APIRoute
 
@@ -18,6 +18,7 @@ from apphelpers.loggers import api_logger
 if settings.get("HONEYBADGER_API_KEY"):
     from honeybadger import Honeybadger
     from honeybadger.utils import filter_dict
+
 
 def phony(f):
     return f
@@ -69,27 +70,27 @@ def honeybadger_wrapper(hb):
     return wrapper
 
 
-def get_current_user(request: Request):
+async def get_current_user(request: Request):
     return request.state.user
 
 
-def get_current_user_id(request: Request):
+async def get_current_user_id(request: Request):
     return request.state.user.id
 
 
-def get_current_user_name(request: Request):
+async def get_current_user_name(request: Request):
     return request.state.user.name
 
 
-def get_current_user_email(request: Request):
+async def get_current_user_email(request: Request):
     return request.state.user.email
 
 
-def get_current_user_mobile(request: Request):
+async def get_current_user_mobile(request: Request):
     return request.state.user.mobile
 
 
-def get_current_domain(request: Request):
+async def get_current_domain(request: Request):
     return request.headers["HOST"]
 
 
@@ -101,10 +102,11 @@ async def get_json_body(request: Request):
     )
 
 
-def get_raw_body(request: Request):
+async def get_raw_body(request: Request):
     return request.body()
 
 
+user = Depends(get_current_user)
 user_id = Depends(get_current_user_id)
 user_name = Depends(get_current_user_name)
 user_email = Depends(get_current_user_email)
@@ -132,17 +134,15 @@ class User:
 
 
 class SecureRouter(APIRoute):
-    def __init__(self, *args, sessions=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.sessions = sessions
+    sessions = None
 
     def get_route_handler(self):
         original_route_handler = super().get_route_handler()
 
-        async def custom_route_handler(request: Request):
+        async def custom_route_handler(_request: Request):
             uid, groups, name, email, mobile, site_groups = None, [], "", None, None, {}
 
-            token = request.headers.get("Authorization")
+            token = _request.headers.get("Authorization")
             if token:
                 try:
                     session = self.sessions.get(
@@ -163,7 +163,7 @@ class SecureRouter(APIRoute):
                         details="Invalid or expired session",
                     )
 
-            request.state.user = User(
+            _request.state.user = User(
                 sid=token,
                 id=uid,
                 name=name,
@@ -173,37 +173,35 @@ class SecureRouter(APIRoute):
                 site_groups=site_groups,
             )
 
-            return await original_route_handler(request)
+            return await original_route_handler(_request)
 
-        import inspect
         original_route_handler.__signature__ = inspect.Signature(
-            parameters = [
+            parameters=[
                 # Use all parameters from handler
-                #*inspect.signature(original_route_handler).parameters.values(),
-
-                # Skip *args and **kwargs from wrapper parameters:
-                *filter(
-                    lambda p: p.kind not in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD),
-                    inspect.signature(custom_route_handler).parameters.values()
-                )
+                *inspect.signature(original_route_handler).parameters.values(),
+                inspect.Parameter(
+                    name="_request",
+                    kind=inspect.Parameter.VAR_POSITIONAL,
+                    annotation=Request,
+                ),
             ],
-            return_annotation = inspect.signature(original_route_handler).return_annotation,
+            return_annotation=inspect.signature(
+                original_route_handler
+            ).return_annotation,
         )
         return custom_route_handler
 
 
 class Router(APIRoute):
-    def __init__(self, *args, sessions=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.sessions = sessions
+    sessions = None
 
     def get_route_handler(self):
         original_route_handler = super().get_route_handler()
 
-        async def custom_route_handler(request: Request):
+        async def custom_route_handler(_request: Request):
             uid, groups, name, email, mobile, site_groups = None, [], "", None, None, {}
 
-            token = request.headers.get("Authorization")
+            token = _request.headers.get("Authorization")
             if token:
                 try:
                     session = self.sessions.get(
@@ -221,7 +219,7 @@ class Router(APIRoute):
                 except InvalidSessionError:
                     pass
 
-            request.state.user = User(
+            _request.state.user = User(
                 sid=token,
                 id=uid,
                 name=name,
@@ -230,29 +228,27 @@ class Router(APIRoute):
                 mobile=mobile,
                 site_groups=site_groups,
             )
-            return await original_route_handler(request)
+            return await original_route_handler(_request)
 
-        import inspect
         original_route_handler.__signature__ = inspect.Signature(
-            parameters = [
+            parameters=[
                 # Use all parameters from handler
-                #*inspect.signature(original_route_handler).parameters.values(),
-
-                # Skip *args and **kwargs from wrapper parameters:
-                *filter(
-                    lambda p: p.kind not in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD),
-                    inspect.signature(custom_route_handler).parameters.values()
-                )
+                *inspect.signature(original_route_handler).parameters.values(),
+                inspect.Parameter(
+                    name="_request",
+                    kind=inspect.Parameter.VAR_POSITIONAL,
+                    annotation=Request,
+                ),
             ],
-            return_annotation = inspect.signature(original_route_handler).return_annotation,
+            return_annotation=inspect.signature(
+                original_route_handler
+            ).return_annotation,
         )
-
         return custom_route_handler
 
 
 class APIFactory:
     def __init__(self, sessiondb_conn=None, urls_prefix=""):
-        # self.secure_router.sessions = SessionDBHandler(sessiondb_conn)
         self.db_tr_wrapper = phony
         self.access_wrapper = phony
         self.multi_site_enabled = False
@@ -260,6 +256,9 @@ class APIFactory:
         self.urls_prefix = urls_prefix
         self.honeybadger_wrapper = phony
         self.setup_session_db(sessiondb_conn)
+        if sessiondb_conn:
+            Router.sessions = SessionDBHandler(sessiondb_conn)
+            SecureRouter.sessions = SessionDBHandler(sessiondb_conn)
         self.router = APIRouter(route_class=Router)
         self.secure_router = APIRouter(route_class=SecureRouter)
 
@@ -287,13 +286,6 @@ class APIFactory:
                            (host, port, password, db)
         """
         self.sessions = SessionDBHandler(sessiondb_conn)
-        # set_context = setup_context_setter(self.sessions)
-        # self.router = self.router.http(requires=set_context)
-        # set_context = setup_strict_context_setter(self.sessions)
-        # self.secure_router = self.router.http(
-        #    requires=hug.authentication.token(set_context)
-        # )
-
         def access_wrapper(f):
             """
             This is the authentication + authorization part
@@ -306,15 +298,14 @@ class APIFactory:
             if login_required or groups_required or groups_forbidden or authorizer:
 
                 @wraps(f)
-                def wrapper(request, *args, **kw):
-
-                    user = request.context["user"]
+                def wrapper(_request, *args, **kw):
+                    user = _request.state.user
 
                     # this is authentication part
                     if not user.id:
                         raise HTTPException(
                             status_code=http.HTTPStatus.UNAUTHORIZED.value,
-                            details="Invalid or expired session",
+                            detail="Invalid or expired session",
                         )
 
                     # this is authorization part
@@ -323,23 +314,37 @@ class APIFactory:
                     if groups_required and not groups.intersection(groups_required):
                         raise HTTPException(
                             status_code=http.HTTPStatus.FORBIDDEN.value,
-                            details="Unauthorized access",
+                            detail="Unauthorized access",
                         )
 
                     if groups_forbidden and groups.intersection(groups_forbidden):
                         raise HTTPException(
                             status_code=http.HTTPStatus.FORBIDDEN.value,
-                            details="Unauthorized access",
+                            detail="Unauthorized access",
                         )
 
                     if authorizer and not authorizer(user, *args, **kw):
                         raise HTTPException(
                             status_code=http.HTTPStatus.FORBIDDEN.value,
-                            details="Unauthorized access",
+                            detail="Unauthorized access",
                         )
 
                     return f(*args, **kw)
 
+                import inspect
+
+                f.__signature__ = inspect.Signature(
+                    parameters=[
+                        # Use all parameters from handler
+                        *inspect.signature(f).parameters.values(),
+                        inspect.Parameter(
+                            name="_request",
+                            kind=inspect.Parameter.VAR_POSITIONAL,
+                            annotation=Request,
+                        ),
+                    ],
+                    return_annotation=inspect.signature(f).return_annotation,
+                )
             else:
                 wrapper = f
 
@@ -357,9 +362,9 @@ class APIFactory:
             if login_required or groups_required or groups_forbidden or authorizer:
 
                 @wraps(f)
-                def wrapper(request, *args, **kw):
+                def wrapper(_request, *args, **kw):
 
-                    user = request.context["user"]
+                    user = _request.context["user"]
 
                     # this is authentication part
                     if not user.id:

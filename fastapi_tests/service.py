@@ -26,7 +26,7 @@ def make_app():
     app.include_router(api_factory.router)
     app.include_router(api_factory.secure_router)
 
-    # api_factory.setup_session_db(sessiondb_conn)
+    api_factory.setup_session_db(sessiondb_conn)
     return app
 
 app = make_app()
