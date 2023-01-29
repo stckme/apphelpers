@@ -39,7 +39,13 @@ def get_my_uid(body=json_body):
 get_my_uid.login_required = True
 
 
-def get_snake(name):
+def get_snake(name=None):
+    return name
+get_snake.not_found_on_none = True
+get_snake.login_required = True
+
+
+async def get_snake_async(name=None):
     return name
 get_snake.not_found_on_none = True
 get_snake.login_required = True
@@ -71,6 +77,7 @@ def setup_routes(factory):
     factory.post('/me/uid')(get_my_uid)
 
     factory.get('/snakes/{name}')(get_snake)
+    factory.get('/snakes-async/{name}')(get_snake_async)
 
     factory.get('/sites/{site_id}/echo-groups')(echo_site_groups)
     factory.get('/sites/{site_id}/echo-groups-async')(echo_site_groups_async)

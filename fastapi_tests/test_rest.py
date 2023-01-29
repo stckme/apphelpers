@@ -156,9 +156,12 @@ def test_group_access_async():
     assert requests.get(url, headers=headers).json() == groups
 
 
-def test_unauthorized():
+def test_not_found_on_none():
     url = base_url + "snakes/viper"
-    assert requests.get(url).status_code == 401
+    assert requests.get(url).status_code != 404
+
+    url = base_url + "snakes"
+    assert requests.get(url).status_code == 404
 
 
 def test_site_group_access():
@@ -225,3 +228,11 @@ def test_site_group_access_async():
     headers = {"Authorization": sid}
     assert requests.get(url.format(site_id=site_id), headers=headers).status_code == 200
     assert requests.get(url.format(site_id=site_id), headers=headers).json() == site_groups[site_id]
+
+
+def test_not_found_on_none_async():
+    url = base_url + "snakes-async/viper"
+    assert requests.get(url).status_code != 404
+
+    url = base_url + "snakes-async"
+    assert requests.get(url).status_code == 404
