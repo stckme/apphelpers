@@ -14,7 +14,6 @@ from apphelpers.rest.common import phony, User
 from converge import settings
 
 
-
 if settings.get("HONEYBADGER_API_KEY"):
     from honeybadger import Honeybadger
     from honeybadger.utils import filter_dict
@@ -227,17 +226,16 @@ class Router(APIRoute):
 
 
 class APIFactory:
-    def __init__(self, sessiondb_conn=None, urls_prefix=""):
+    def __init__(self, sessiondb_conn=None, urls_prefix="", site_identifier=None):
         self.db_tr_wrapper = phony
         self.access_wrapper = phony
         self.multi_site_enabled = False
-        self.site_identifier = None
+        self.site_identifier = site_identifier
         self.urls_prefix = urls_prefix
         self.honeybadger_wrapper = phony
+        if site_identifier:
+            self.enable_multi_site(site_identifier)
         self.setup_session_db(sessiondb_conn)
-        if sessiondb_conn:
-            Router.sessions = SessionDBHandler(sessiondb_conn)
-            SecureRouter.sessions = SessionDBHandler(sessiondb_conn)
         self.router = APIRouter(route_class=Router)
         self.secure_router = APIRouter(route_class=SecureRouter)
 
@@ -265,6 +263,9 @@ class APIFactory:
                            (host, port, password, db)
         """
         self.sessions = SessionDBHandler(sessiondb_conn)
+        Router.sessions = SessionDBHandler(sessiondb_conn)
+        SecureRouter.sessions = SessionDBHandler(sessiondb_conn)
+
         def access_wrapper(f):
             """
             This is the authentication + authorization part
@@ -277,7 +278,7 @@ class APIFactory:
             if login_required or groups_required or groups_forbidden or authorizer:
 
                 @wraps(f)
-                def wrapper(_request, *args, **kw):
+                async def wrapper(_request, *args, **kw):
                     user = _request.state.user
 
                     # this is authentication part
@@ -308,9 +309,11 @@ class APIFactory:
                             detail="Unauthorized access",
                         )
 
-                    return f(*args, **kw)
-
-                import inspect
+                    return (
+                        await f(*args, **kw)
+                        if inspect.iscoroutinefunction(f)
+                        else f(*args, **kw)
+                    )
 
                 f.__signature__ = inspect.Signature(
                     parameters=[
@@ -341,15 +344,15 @@ class APIFactory:
             if login_required or groups_required or groups_forbidden or authorizer:
 
                 @wraps(f)
-                def wrapper(_request, *args, **kw):
+                async def wrapper(_request, *args, **kw):
 
-                    user = _request.context["user"]
+                    user = _request.state.user
 
                     # this is authentication part
                     if not user.id:
                         raise HTTPException(
                             status_code=http.HTTPStatus.UNAUTHORIZED.value,
-                            details="Invalid or expired session",
+                            detail="Invalid or expired session",
                         )
 
                     # this is authorization part
@@ -361,23 +364,39 @@ class APIFactory:
                     if groups_required and not groups.intersection(groups_required):
                         raise HTTPException(
                             status_code=http.HTTPStatus.FORBIDDEN.value,
-                            details="Unauthorized access",
+                            detail="Unauthorized access",
                         )
 
                     if groups_forbidden and groups.intersection(groups_forbidden):
                         raise HTTPException(
                             status_code=http.HTTPStatus.FORBIDDEN.value,
-                            details="Unauthorized access",
+                            detail="Unauthorized access",
                         )
 
                     if authorizer and not authorizer(user, *args, **kw):
                         raise HTTPException(
                             status_code=http.HTTPStatus.FORBIDDEN.value,
-                            details="Unauthorized access",
+                            detail="Unauthorized access",
                         )
 
-                    return f(*args, **kw)
+                    return (
+                        await f(*args, **kw)
+                        if inspect.iscoroutinefunction(f)
+                        else f(*args, **kw)
+                    )
 
+                f.__signature__ = inspect.Signature(
+                    parameters=[
+                        # Use all parameters from handler
+                        *inspect.signature(f).parameters.values(),
+                        inspect.Parameter(
+                            name="_request",
+                            kind=inspect.Parameter.VAR_POSITIONAL,
+                            annotation=Request,
+                        ),
+                    ],
+                    return_annotation=inspect.signature(f).return_annotation,
+                )
             else:
                 wrapper = f
 

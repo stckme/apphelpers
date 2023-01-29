@@ -88,7 +88,7 @@ Ready to contribute? Here's how to set up `apphelpers` for local development.
 
 
    $ uvicorn fastapi_tests.service:app --host 0.0.0.0 --port 5000
-   $ pytest -x  fastapi_tests
+   $ pytest -x fastapi_tests
 
 7. Commit your changes and push your branch to GitHub::
 
