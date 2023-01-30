@@ -114,6 +114,10 @@ json_body = Depends(get_json_body)
 class SecureRouter(APIRoute):
     sessions = None
 
+    @classmethod
+    def setup_ssessions(cls, sessions: SessionDBHandler):
+        cls.sessions = sessions
+
     def get_route_handler(self):
         original_route_handler = super().get_route_handler()
 
@@ -172,6 +176,10 @@ class SecureRouter(APIRoute):
 
 class Router(APIRoute):
     sessions = None
+
+    @classmethod
+    def setup_ssessions(cls, sessions: SessionDBHandler):
+        cls.sessions = sessions
 
     def get_route_handler(self):
         original_route_handler = super().get_route_handler()
@@ -239,7 +247,7 @@ class APIFactory:
         self.router = APIRouter(route_class=Router)
         self.secure_router = APIRouter(route_class=SecureRouter)
 
-    def enable_multi_site(self, site_identifier):
+    def enable_multi_site(self, site_identifier: str):
         self.multi_site_enabled = True
         self.site_identifier = site_identifier
 
@@ -263,8 +271,8 @@ class APIFactory:
                            (host, port, password, db)
         """
         self.sessions = SessionDBHandler(sessiondb_conn)
-        Router.sessions = SessionDBHandler(sessiondb_conn)
-        SecureRouter.sessions = SessionDBHandler(sessiondb_conn)
+        Router.setup_ssessions(self.sessions)
+        SecureRouter.setup_ssessions(self.sessions)
 
         def access_wrapper(f):
             """
