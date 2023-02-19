@@ -23,6 +23,10 @@ sessiondb_conn = dict(
 sessionsdb = sessionslib.SessionDBHandler(sessiondb_conn)
 
 
+def setup_module():
+    sessionsdb.destroy_all()
+
+
 def test_get():
     word = "hello"
     url = echo_url + "/" + word
@@ -194,7 +198,10 @@ def test_site_group_access():
 
     headers = {"Authorization": sid}
     assert requests.get(url.format(site_id=site_id), headers=headers).status_code == 200
-    assert requests.get(url.format(site_id=site_id), headers=headers).json() == site_groups[site_id]
+    assert (
+        requests.get(url.format(site_id=site_id), headers=headers).json()
+        == site_groups[site_id]
+    )
 
 
 def test_site_group_access_async():
@@ -227,7 +234,10 @@ def test_site_group_access_async():
 
     headers = {"Authorization": sid}
     assert requests.get(url.format(site_id=site_id), headers=headers).status_code == 200
-    assert requests.get(url.format(site_id=site_id), headers=headers).json() == site_groups[site_id]
+    assert (
+        requests.get(url.format(site_id=site_id), headers=headers).json()
+        == site_groups[site_id]
+    )
 
 
 def test_not_found_on_none_async():
