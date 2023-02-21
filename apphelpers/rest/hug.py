@@ -1,14 +1,14 @@
-from dataclasses import dataclass, asdict
-from falcon import HTTPUnauthorized, HTTPForbidden, HTTPNotFound
+from dataclasses import asdict, dataclass
+
 import hug
+from converge import settings
+from falcon import HTTPForbidden, HTTPNotFound, HTTPUnauthorized
 from hug.decorators import wraps
 
 from apphelpers.db.peewee import dbtransaction
-from apphelpers.errors import InvalidSessionError
-from apphelpers.sessions import SessionDBHandler
-from converge import settings
-
+from apphelpers.errors import BaseError, InvalidSessionError
 from apphelpers.loggers import api_logger
+from apphelpers.sessions import SessionDBHandler
 
 if settings.get("HONEYBADGER_API_KEY"):
     from honeybadger import Honeybadger
@@ -33,6 +33,20 @@ def raise_not_found_on_none(f):
     return f
 
 
+def notify_honeybadger(honeybadger, error, func, args, kwargs):
+    try:
+        honeybadger.notify(
+            error,
+            context={
+                "func": func.__name__,
+                "args": args,
+                "kwargs": filter_dict(kwargs, settings.HB_PARAM_FILTERS),
+            },
+        )
+    finally:
+        pass
+
+
 def honeybadger_wrapper(hb):
     """
     wrapper that executes the function in a try/except
@@ -43,20 +57,19 @@ def honeybadger_wrapper(hb):
         @wraps(f)
         def f_wrapped(*args, **kw):
             try:
-                ret = f(*args, **kw)
-            except Exception as e:
-                try:
-                    hb.notify(
-                        e,
-                        context={
-                            "func": f.__name__,
-                            "args": args,
-                            "kwargs": filter_dict(kw, settings.HB_PARAM_FILTERS),
-                        },
+                return f(*args, **kw)
+            except BaseError as e:
+                if e.report:
+                    notify_honeybadger(
+                        honeybadger=hb, error=e, func=f, args=args, kwargs=kw
                     )
-                finally:
-                    raise e
-            return ret
+                raise e
+
+            except Exception as e:
+                notify_honeybadger(
+                    honeybadger=hb, error=e, func=f, args=args, kwargs=kw
+                )
+                raise e
 
         return f_wrapped
 
