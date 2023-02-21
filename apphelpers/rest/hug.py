@@ -1,14 +1,14 @@
-from dataclasses import asdict, dataclass
-
+from dataclasses import dataclass, asdict
+from falcon import HTTPUnauthorized, HTTPForbidden, HTTPNotFound
 import hug
-from converge import settings
-from falcon import HTTPForbidden, HTTPNotFound, HTTPUnauthorized
 from hug.decorators import wraps
 
 from apphelpers.db.peewee import dbtransaction
-from apphelpers.errors import BaseError, InvalidSessionError
-from apphelpers.loggers import api_logger
+from apphelpers.errors import InvalidSessionError
 from apphelpers.sessions import SessionDBHandler
+from converge import settings
+
+from apphelpers.loggers import api_logger
 
 if settings.get("HONEYBADGER_API_KEY"):
     from honeybadger import Honeybadger
@@ -44,9 +44,6 @@ def honeybadger_wrapper(hb):
         def f_wrapped(*args, **kw):
             try:
                 ret = f(*args, **kw)
-            except BaseError as e:
-                # Don't report BaseError
-                raise e
             except Exception as e:
                 try:
                     hb.notify(
