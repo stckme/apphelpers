@@ -1,9 +1,12 @@
+from falcon import status_codes as codes
+
+
 class BaseError(Exception):
 
     # Whether to report this error to honeybadger
     report = True
 
-    code = 500
+    code = codes.HTTP_500
     description: str = "Something went wrong"
 
     def __init__(self, code=None, description=None):
@@ -18,24 +21,24 @@ class BaseError(Exception):
 
 
 class NotFoundError(BaseError):
-    code = 404
+    code = codes.HTTP_404
 
 
 class AccessDenied(BaseError):
-    code = 403
+    code = codes.HTTP_403
     description = "Access denied"
 
 
 class ValidationError(BaseError):
-    code = 400
+    code = codes.HTTP_400
     description = "Invalid request"
 
 
 class InvalidSessionError(BaseError):
-    code = 401
+    code = codes.HTTP_401
     description = "Invalid session"
 
 
 class ConflictError(BaseError):
-    code = 409
+    code = codes.HTTP_409
     description = "Duplicate resource"
