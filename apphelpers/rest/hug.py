@@ -33,6 +33,20 @@ def raise_not_found_on_none(f):
     return f
 
 
+def notify_honeybadger(honeybadger, error, func, args, kwargs):
+    try:
+        honeybadger.notify(
+            error,
+            context={
+                "func": func.__name__,
+                "args": args,
+                "kwargs": filter_dict(kwargs, settings.HB_PARAM_FILTERS),
+            },
+        )
+    finally:
+        pass
+
+
 def honeybadger_wrapper(hb):
     """
     wrapper that executes the function in a try/except
@@ -43,23 +57,19 @@ def honeybadger_wrapper(hb):
         @wraps(f)
         def f_wrapped(*args, **kw):
             try:
-                ret = f(*args, **kw)
+                return f(*args, **kw)
             except BaseError as e:
-                # Don't report BaseError
-                raise e
-            except Exception as e:
-                try:
-                    hb.notify(
-                        e,
-                        context={
-                            "func": f.__name__,
-                            "args": args,
-                            "kwargs": filter_dict(kw, settings.HB_PARAM_FILTERS),
-                        },
+                if e.report:
+                    notify_honeybadger(
+                        honeybadger=hb, error=e, func=f, args=args, kwargs=kw
                     )
-                finally:
-                    raise e
-            return ret
+                raise e
+
+            except Exception as e:
+                notify_honeybadger(
+                    honeybadger=hb, error=e, func=f, args=args, kwargs=kw
+                )
+                raise e
 
         return f_wrapped
 

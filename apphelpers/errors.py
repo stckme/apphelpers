@@ -1,4 +1,8 @@
 class BaseError(Exception):
+
+    # Whether to report this error to honeybadger
+    report = True
+
     def __init__(self, **kw):
         for k, v in kw.items():
             setattr(self, k, v)
