@@ -3,15 +3,17 @@ class BaseError(Exception):
     # Whether to report this error to honeybadger
     report = True
 
-    def __init__(self, **kw):
-        for k, v in kw.items():
-            setattr(self, k, v)
+    code = 500
+    description: str = "Something went wrong"
+
+    def __init__(self, code=None, description=None):
+        self.code = code or self.__class__.code
+        self.description = description or self.__class__.description
 
     def to_dict(self):
         return {
-            "msg": getattr(self, "msg", ""),
-            "code": getattr(self, "code", None),
-            "data": getattr(self, "data", {}),
+            "code": self.code,
+            "description": self.description,
         }
 
 
@@ -19,23 +21,21 @@ class NotFoundError(BaseError):
     code = 404
 
 
-class SecurityViolation(BaseError):
-    pass
-
-
 class AccessDenied(BaseError):
-    msg = "Access denied"
+    code = 403
+    description = "Access denied"
 
 
 class ValidationError(BaseError):
     code = 400
+    description = "Invalid request"
 
 
 class InvalidSessionError(BaseError):
     code = 401
-    msg = "Invalid session"
+    description = "Invalid session"
 
 
 class ConflictError(BaseError):
     code = 409
-    msg = "Duplicate resource"
+    description = "Duplicate resource"
