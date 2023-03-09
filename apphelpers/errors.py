@@ -1,41 +1,47 @@
+from dataclasses import asdict, dataclass, field
+from typing import Optional
+
+
+@dataclass
 class BaseError(Exception):
 
     # Whether to report this error to honeybadger
-    report = True
-
-    def __init__(self, **kw):
-        for k, v in kw.items():
-            setattr(self, k, v)
+    report: bool = True
+    msg: str = ""
+    code: Optional[int] = None
+    data: dict = field(default_factory=dict)
 
     def to_dict(self):
-        return {
-            "msg": getattr(self, "msg", ""),
-            "code": getattr(self, "code", None),
-            "data": getattr(self, "data", {}),
-        }
+        return asdict(self)
 
 
+@dataclass
 class NotFoundError(BaseError):
-    code = 404
+    code: int = 404
 
 
+@dataclass
 class SecurityViolation(BaseError):
     pass
 
 
+@dataclass
 class AccessDenied(BaseError):
-    msg = "Access denied"
+    msg: str = "Access denied"
 
 
+@dataclass
 class ValidationError(BaseError):
-    code = 400
+    code: int = 400
 
 
+@dataclass
 class InvalidSessionError(BaseError):
-    code = 401
-    msg = "Invalid session"
+    code: int = 401
+    msg: str = "Invalid session"
 
 
+@dataclass
 class ConflictError(BaseError):
-    code = 409
-    msg = "Duplicate resource"
+    code: int = 409
+    msg: str = "Duplicate resource"
