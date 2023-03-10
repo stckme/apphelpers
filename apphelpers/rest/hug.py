@@ -63,7 +63,7 @@ def honeybadger_wrapper(hb):
                     notify_honeybadger(
                         honeybadger=hb, error=e, func=f, args=args, kwargs=kw
                     )
-                raise HTTPError(status=e.code, description=e.description)
+                raise HTTPError(status=e.status, description=e.description)
 
             except Exception as e:
                 notify_honeybadger(
