@@ -1,7 +1,7 @@
-from falcon import status_codes
+from falcon import HTTPError, status_codes
 
 
-class BaseError(Exception):
+class BaseError(HTTPError):
 
     # Whether to report this error to honeybadger
     report = True
@@ -10,8 +10,10 @@ class BaseError(Exception):
     description: str = "Something went wrong"
 
     def __init__(self, status=None, description=None):
-        self.status = status or self.__class__.status
-        self.description = description or self.__class__.description
+        super().__init__(
+            status=status or self.status,
+            description=description or self.description,
+        )
 
     def to_dict(self):
         return {
