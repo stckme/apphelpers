@@ -24,6 +24,7 @@ class BaseError(HTTPError):
 
 class NotFoundError(BaseError):
     status = status_codes.HTTP_404
+    description = "Not Found"
 
 
 class AccessDenied(BaseError):
