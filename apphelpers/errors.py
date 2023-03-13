@@ -1,41 +1,47 @@
-class BaseError(Exception):
+from falcon import HTTPError, status_codes
+
+
+class BaseError(HTTPError):
 
     # Whether to report this error to honeybadger
     report = True
 
-    def __init__(self, **kw):
-        for k, v in kw.items():
-            setattr(self, k, v)
+    status = status_codes.HTTP_500
+    description: str = "Something went wrong"
+
+    def __init__(self, status=None, description=None):
+        super().__init__(
+            status=status or self.status,
+            description=description or self.description,
+        )
 
     def to_dict(self):
         return {
-            "msg": getattr(self, "msg", ""),
-            "code": getattr(self, "code", None),
-            "data": getattr(self, "data", {}),
+            "status": self.status,
+            "description": self.description,
         }
 
 
 class NotFoundError(BaseError):
-    code = 404
-
-
-class SecurityViolation(BaseError):
-    pass
+    status = status_codes.HTTP_404
+    description = "Not Found"
 
 
 class AccessDenied(BaseError):
-    msg = "Access denied"
+    status = status_codes.HTTP_403
+    description = "Access denied"
 
 
 class ValidationError(BaseError):
-    code = 400
+    status = status_codes.HTTP_400
+    description = "Invalid request"
 
 
 class InvalidSessionError(BaseError):
-    code = 401
-    msg = "Invalid session"
+    status = status_codes.HTTP_401
+    description = "Invalid session"
 
 
 class ConflictError(BaseError):
-    code = 409
-    msg = "Duplicate resource"
+    status = status_codes.HTTP_409
+    description = "Duplicate resource"
