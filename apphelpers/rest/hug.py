@@ -2,7 +2,7 @@ from dataclasses import asdict, dataclass
 
 import hug
 from converge import settings
-from falcon import HTTPError, HTTPForbidden, HTTPNotFound, HTTPUnauthorized
+from falcon import HTTPForbidden, HTTPNotFound, HTTPUnauthorized
 from hug.decorators import wraps
 
 from apphelpers.db.peewee import dbtransaction
@@ -63,7 +63,7 @@ def honeybadger_wrapper(hb):
                     notify_honeybadger(
                         honeybadger=hb, error=e, func=f, args=args, kwargs=kw
                     )
-                raise HTTPError(status=e.status, description=e.description)
+                raise e
 
             except Exception as e:
                 notify_honeybadger(
