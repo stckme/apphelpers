@@ -16,6 +16,7 @@ sessiondb_conn = dict(
     db=settings.SESSIONSDB_NO,
 )
 sessionsdb = sessionslib.SessionDBHandler(sessiondb_conn)
+sessionsdb.destroy_all()
 
 
 class data:
@@ -29,6 +30,7 @@ class state:
 Session = namedtuple("Session", ["uid", "groups", "k", "v"])
 data.session = Session(987651, ["admin", "member"], "foo", "bar")
 data.session_email = "noone@example.com"
+data.binded_site_id = 123
 
 # uid, groups, k, v = 987651, ['admin', 'member'], 'foo', 'bar'
 
@@ -42,8 +44,40 @@ def test_create():
     sid = sessionsdb.create(**d)
     assert len(sid) == 43
     sid_new = sessionsdb.create(data.session.uid, data.session.groups)
-    assert sid == sid_new
+    assert sid == sid_new == sessionsdb.uid2sid(d["uid"])
     state.sid = sid
+    assert sessionsdb.uid2binded_sids(d["uid"]) == []
+
+    d = dict(
+        uid=data.session.uid,
+        groups=data.session.groups,
+        extras=dict(email=data.session_email),
+        binded_site_id=data.binded_site_id,
+    )
+    binded_sid = sessionsdb.create(**d)
+    assert binded_sid != sid
+    assert binded_sid == sessionsdb.uid2sid(d["uid"], data.binded_site_id)
+    assert sessionsdb.uid2binded_sids(d["uid"]) == [binded_sid]
+    assert sessionsdb.exists(binded_sid)
+    assert sessionsdb.uid2binded_site_ids(d["uid"]) == [data.binded_site_id]
+
+    sessionsdb.destroy_all_for_binded_site(data.binded_site_id)
+    assert not sessionsdb.exists(binded_sid)
+
+    d = dict(
+        uid=data.session.uid,
+        groups=data.session.groups,
+        extras=dict(email=data.session_email),
+        binded_site_id=data.binded_site_id,
+    )
+    binded_sid = sessionsdb.create(**d)
+    assert binded_sid != sid
+    assert binded_sid == sessionsdb.uid2sid(d["uid"], data.binded_site_id)
+    assert sessionsdb.uid2binded_sids(d["uid"]) == [binded_sid]
+    assert sessionsdb.exists(binded_sid)
+
+    sessionsdb.destroy_binded_sessions_for(data.session.uid)
+    assert not sessionsdb.exists(binded_sid)
 
 
 def test_update():

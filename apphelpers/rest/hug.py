@@ -110,6 +110,7 @@ class User:
     email: str = None
     mobile: str = None
     site_groups: dict = None
+    binded_site_id: None = None
 
     def to_dict(self):
         return asdict(self)
@@ -121,20 +122,38 @@ class User:
 def setup_strict_context_setter(sessions):
     def set_context(token):
 
-        uid, groups, name, email, mobile, site_groups = None, [], "", None, None, {}
+        uid, groups, name, email, mobile, site_groups, binded_site_id = (
+            None,
+            [],
+            "",
+            None,
+            None,
+            {},
+            None,
+        )
 
         if token:
             try:
                 session = sessions.get(
-                    token, ["uid", "name", "groups", "email", "mobile", "site_groups"]
+                    token,
+                    [
+                        "uid",
+                        "name",
+                        "groups",
+                        "email",
+                        "mobile",
+                        "site_groups",
+                        "binded_site_id",
+                    ],
                 )
-                uid, name, groups, email, mobile, site_groups = (
+                uid, name, groups, email, mobile, site_groups, binded_site_id = (
                     session["uid"],
                     session["name"],
                     session["groups"],
                     session["email"],
                     session["mobile"],
                     session["site_groups"],
+                    session["binded_site_id"],
                 )
             except InvalidSessionError:
                 raise HTTPUnauthorized("Invalid or expired session")
@@ -147,6 +166,7 @@ def setup_strict_context_setter(sessions):
             email=email,
             mobile=mobile,
             site_groups=site_groups,
+            binded_site_id=binded_site_id,
         )
 
     return set_context
@@ -158,20 +178,38 @@ def setup_context_setter(sessions):
         Only sets context based on session.
         Does not raise any error
         """
-        uid, groups, name, email, mobile, site_groups = None, [], "", None, None, {}
+        uid, groups, name, email, mobile, site_groups, binded_site_id = (
+            None,
+            [],
+            "",
+            None,
+            None,
+            {},
+            None,
+        )
         token = request.get_header("Authorization")
         if token:
             try:
                 session = sessions.get(
-                    token, ["uid", "name", "groups", "email", "mobile", "site_groups"]
+                    token,
+                    [
+                        "uid",
+                        "name",
+                        "groups",
+                        "email",
+                        "mobile",
+                        "site_groups",
+                        "binded_site_id",
+                    ],
                 )
-                uid, name, groups, email, mobile, site_groups = (
+                uid, name, groups, email, mobile, site_groups, binded_site_id = (
                     session["uid"],
                     session["name"],
                     session["groups"],
                     session["email"],
                     session["mobile"],
                     session["site_groups"],
+                    session["binded_site_id"],
                 )
                 if api_logger:
                     api_logger.info("{} | {} | {}", uid, request.method, request.url)
@@ -187,6 +225,7 @@ def setup_context_setter(sessions):
             email=email,
             mobile=mobile,
             site_groups=site_groups,
+            binded_site_id=binded_site_id,
         )
 
     return set_context
@@ -288,15 +327,23 @@ class APIFactory:
                 def wrapper(request, *args, **kw):
 
                     user = request.context["user"]
+                    site_id = (
+                        int(kw[self.site_identifier])
+                        if self.site_identifier in kw
+                        else None
+                    )
 
                     # this is authentication part
                     if not user.id:
                         raise HTTPUnauthorized("Invalid or expired session")
 
+                    # binded site authorization
+                    if user.binded_site_id and site_id != user.binded_site_id:
+                        raise HTTPUnauthorized("Invalid or expired session")
+
                     # this is authorization part
                     groups = set(user.groups)
-                    if self.site_identifier in kw:
-                        site_id = int(kw[self.site_identifier])
+                    if site_id:
                         groups = groups.union(user.site_groups.get(site_id, []))
 
                     if groups_required and not groups.intersection(groups_required):
