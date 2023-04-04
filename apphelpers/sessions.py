@@ -12,10 +12,10 @@ session_key = ("session" + _SEP).__add__
 rev_lookup_prefix = f"uid{_SEP}"
 
 
-def rev_lookup_key(uid, binded_site_id=None):
+def rev_lookup_key(uid, bound_site_id=None):
     return (
-        f"{rev_lookup_prefix}{uid}{_SEP}{binded_site_id}"
-        if binded_site_id
+        f"{rev_lookup_prefix}{uid}{_SEP}{bound_site_id}"
+        if bound_site_id
         else f"{rev_lookup_prefix}{uid}"
     )
 
@@ -37,16 +37,16 @@ class SessionDBHandler:
         site_groups=None,
         extras=None,
         ttl=THIRTY_DAYS,
-        binded_site_id=None,
+        bound_site_id=None,
     ):
         """
         groups: list
         site_groups: dict
         extras (dict): each key-value pair of extras get stored into hset
-        binded_site_id: int (session is only applicable for binded site_id)
+        bound_site_id: int (session is only applicable for bound site_id)
         """
         if uid:
-            sid = self.uid2sid(uid, binded_site_id)
+            sid = self.uid2sid(uid, bound_site_id)
             if sid:
                 return sid
 
@@ -59,7 +59,7 @@ class SessionDBHandler:
             "uid": uid,
             "groups": groups,
             "site_groups": site_groups,
-            "binded_site_id": binded_site_id,
+            "bound_site_id": bound_site_id,
         }
         if extras:
             session_dict.update(extras)
@@ -67,7 +67,7 @@ class SessionDBHandler:
         self.rconn.hmset(key, session)
 
         if uid:
-            rev_key = rev_lookup_key(uid, binded_site_id)
+            rev_key = rev_lookup_key(uid, bound_site_id)
             self.rconn.setex(rev_key, value=sid, time=ttl)
         self.rconn.expire(key, ttl)
         return sid
@@ -88,15 +88,15 @@ class SessionDBHandler:
         value = self.rconn.hget(session_key(sid), attribute)
         return pickle.loads(value) if value else None
 
-    def uid2sid(self, uid, binded_site_id=None):
-        sid = self.rconn.get(rev_lookup_key(uid, binded_site_id))
+    def uid2sid(self, uid, bound_site_id=None):
+        sid = self.rconn.get(rev_lookup_key(uid, bound_site_id))
         return sid.decode() if sid else None
 
-    def uid2binded_sids(self, uid):
+    def uid2bound_sids(self, uid):
         keys = self.rconn.keys(rev_lookup_key(uid, "*"))
         return [self.rconn.get(key).decode() for key in keys]
 
-    def uid2binded_site_ids(self, uid):
+    def uid2bound_site_ids(self, uid):
         keys = self.rconn.keys(rev_lookup_key(uid, "*"))
         return [int(key.decode().split(_SEP)[2]) for key in keys]
 
@@ -108,8 +108,8 @@ class SessionDBHandler:
         sid = self.uid2sid(uid)
         return self.get(sid) if sid else None
 
-    def get_binded_sessions_for(self, uid):
-        return [self.get(sid) for sid in self.uid2binded_sids(uid)]
+    def get_bound_sessions_for(self, uid):
+        return [self.get(sid) for sid in self.uid2bound_sids(uid)]
 
     # Same default ttl as `create` function
     def extend_timeout(self, sid, ttl=THIRTY_DAYS):
@@ -173,15 +173,15 @@ class SessionDBHandler:
         if keys:
             self.rconn.delete(*keys)
 
-    def destroy_all_for_binded_site(self, binded_site_id):
-        keys = self.rconn.keys(rev_lookup_key("*", binded_site_id))
+    def destroy_all_for_bound_site(self, bound_site_id):
+        keys = self.rconn.keys(rev_lookup_key("*", bound_site_id))
         if keys:
             sids = [session_key(self.rconn.get(key).decode()) for key in keys]
             if sids:
                 self.rconn.delete(*sids)
             self.rconn.delete(*keys)
 
-    def destroy_binded_sessions_for(self, uid):
+    def destroy_bound_sessions_for(self, uid):
         keys = self.rconn.keys(rev_lookup_key(uid, "*"))
         if keys:
             sids = [session_key(self.rconn.get(key).decode()) for key in keys]

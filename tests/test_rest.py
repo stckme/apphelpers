@@ -195,12 +195,12 @@ def test_site_group_access():
     assert requests.get(url, headers=headers).status_code == 200
 
 
-def test_binded_site_group_access():
+def test_bound_site_group_access():
     # 1. Forbidden group
     uid = 121
     groups = [globalgroups.forbidden.value]
     site_groups = {1: [sitegroups.forbidden.value]}
-    d = dict(uid=uid, groups=groups, site_groups=site_groups, binded_site_id=1)
+    d = dict(uid=uid, groups=groups, site_groups=site_groups, bound_site_id=1)
     sid = sessionsdb.create(**d)
     url = urls.echo_for_sitegroups
 
@@ -211,17 +211,17 @@ def test_binded_site_group_access():
     uid = 122
     groups = [globalgroups.privileged.value]
     site_groups = {1: [sitegroups.privileged.value]}
-    d = dict(uid=uid, groups=groups, site_groups=site_groups, binded_site_id=1)
+    d = dict(uid=uid, groups=groups, site_groups=site_groups, bound_site_id=1)
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
     assert requests.get(url, headers=headers).status_code == 200
 
-    # 2. Access group of Unbinded site
+    # 2. Access group of Unbound site
     uid = 123
     groups = [globalgroups.privileged.value]
     site_groups = {1: [sitegroups.privileged.value]}
-    d = dict(uid=uid, groups=groups, site_groups=site_groups, binded_site_id=2)
+    d = dict(uid=uid, groups=groups, site_groups=site_groups, bound_site_id=2)
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
@@ -230,7 +230,7 @@ def test_binded_site_group_access():
     uid = 123
     groups = [globalgroups.privileged.value]
     site_groups = {2: [sitegroups.privileged.value]}
-    d = dict(uid=uid, groups=groups, site_groups=site_groups, binded_site_id=1)
+    d = dict(uid=uid, groups=groups, site_groups=site_groups, bound_site_id=1)
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
