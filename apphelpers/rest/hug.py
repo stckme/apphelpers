@@ -110,7 +110,7 @@ class User:
     email: str = None
     mobile: str = None
     site_groups: dict = None
-    bound_site_id: None = None
+    site_ctx: None = None
 
     def to_dict(self):
         return asdict(self)
@@ -122,7 +122,7 @@ class User:
 def setup_strict_context_setter(sessions):
     def set_context(token):
 
-        uid, groups, name, email, mobile, site_groups, bound_site_id = (
+        uid, groups, name, email, mobile, site_groups, site_ctx = (
             None,
             [],
             "",
@@ -143,17 +143,17 @@ def setup_strict_context_setter(sessions):
                         "email",
                         "mobile",
                         "site_groups",
-                        "bound_site_id",
+                        "site_ctx",
                     ],
                 )
-                uid, name, groups, email, mobile, site_groups, bound_site_id = (
+                uid, name, groups, email, mobile, site_groups, site_ctx = (
                     session["uid"],
                     session["name"],
                     session["groups"],
                     session["email"],
                     session["mobile"],
                     session["site_groups"],
-                    session["bound_site_id"],
+                    session["site_ctx"],
                 )
             except InvalidSessionError:
                 raise HTTPUnauthorized("Invalid or expired session")
@@ -166,7 +166,7 @@ def setup_strict_context_setter(sessions):
             email=email,
             mobile=mobile,
             site_groups=site_groups,
-            bound_site_id=bound_site_id,
+            site_ctx=site_ctx,
         )
 
     return set_context
@@ -178,7 +178,7 @@ def setup_context_setter(sessions):
         Only sets context based on session.
         Does not raise any error
         """
-        uid, groups, name, email, mobile, site_groups, bound_site_id = (
+        uid, groups, name, email, mobile, site_groups, site_ctx = (
             None,
             [],
             "",
@@ -199,17 +199,17 @@ def setup_context_setter(sessions):
                         "email",
                         "mobile",
                         "site_groups",
-                        "bound_site_id",
+                        "site_ctx",
                     ],
                 )
-                uid, name, groups, email, mobile, site_groups, bound_site_id = (
+                uid, name, groups, email, mobile, site_groups, site_ctx = (
                     session["uid"],
                     session["name"],
                     session["groups"],
                     session["email"],
                     session["mobile"],
                     session["site_groups"],
-                    session["bound_site_id"],
+                    session["site_ctx"],
                 )
                 if api_logger:
                     api_logger.info("{} | {} | {}", uid, request.method, request.url)
@@ -225,7 +225,7 @@ def setup_context_setter(sessions):
             email=email,
             mobile=mobile,
             site_groups=site_groups,
-            bound_site_id=bound_site_id,
+            site_ctx=site_ctx,
         )
 
     return set_context
@@ -338,7 +338,7 @@ class APIFactory:
                         raise HTTPUnauthorized("Invalid or expired session")
 
                     # bound site authorization
-                    if user.bound_site_id and site_id != user.bound_site_id:
+                    if user.site_ctx and site_id != user.site_ctx:
                         raise HTTPUnauthorized("Invalid or expired session")
 
                     # this is authorization part

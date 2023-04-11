@@ -200,7 +200,7 @@ def test_bound_site_group_access():
     uid = 121
     groups = [globalgroups.forbidden.value]
     site_groups = {1: [sitegroups.forbidden.value]}
-    d = dict(uid=uid, groups=groups, site_groups=site_groups, bound_site_id=1)
+    d = dict(uid=uid, groups=groups, site_groups=site_groups, site_ctx=1)
     sid = sessionsdb.create(**d)
     url = urls.echo_for_sitegroups
 
@@ -211,7 +211,7 @@ def test_bound_site_group_access():
     uid = 122
     groups = [globalgroups.privileged.value]
     site_groups = {1: [sitegroups.privileged.value]}
-    d = dict(uid=uid, groups=groups, site_groups=site_groups, bound_site_id=1)
+    d = dict(uid=uid, groups=groups, site_groups=site_groups, site_ctx=1)
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
@@ -221,7 +221,7 @@ def test_bound_site_group_access():
     uid = 123
     groups = [globalgroups.privileged.value]
     site_groups = {1: [sitegroups.privileged.value]}
-    d = dict(uid=uid, groups=groups, site_groups=site_groups, bound_site_id=2)
+    d = dict(uid=uid, groups=groups, site_groups=site_groups, site_ctx=2)
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
@@ -230,7 +230,7 @@ def test_bound_site_group_access():
     uid = 123
     groups = [globalgroups.privileged.value]
     site_groups = {2: [sitegroups.privileged.value]}
-    d = dict(uid=uid, groups=groups, site_groups=site_groups, bound_site_id=1)
+    d = dict(uid=uid, groups=groups, site_groups=site_groups, site_ctx=1)
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}

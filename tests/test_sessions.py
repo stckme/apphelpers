@@ -30,7 +30,7 @@ class state:
 Session = namedtuple("Session", ["uid", "groups", "k", "v"])
 data.session = Session(987651, ["admin", "member"], "foo", "bar")
 data.session_email = "noone@example.com"
-data.bound_site_id = 123
+data.site_ctx = 123
 
 # uid, groups, k, v = 987651, ['admin', 'member'], 'foo', 'bar'
 
@@ -52,27 +52,27 @@ def test_create():
         uid=data.session.uid,
         groups=data.session.groups,
         extras=dict(email=data.session_email),
-        bound_site_id=data.bound_site_id,
+        site_ctx=data.site_ctx,
     )
     bound_sid = sessionsdb.create(**d)
     assert bound_sid != sid
-    assert bound_sid == sessionsdb.uid2sid(d["uid"], data.bound_site_id)
+    assert bound_sid == sessionsdb.uid2sid(d["uid"], data.site_ctx)
     assert sessionsdb.uid2bound_sids(d["uid"]) == [bound_sid]
     assert sessionsdb.exists(bound_sid)
-    assert sessionsdb.uid2bound_site_ids(d["uid"]) == [data.bound_site_id]
+    assert sessionsdb.uid2bound_site_ids(d["uid"]) == [data.site_ctx]
 
-    sessionsdb.destroy_all_for_bound_site(data.bound_site_id)
+    sessionsdb.destroy_all_for_bound_site(data.site_ctx)
     assert not sessionsdb.exists(bound_sid)
 
     d = dict(
         uid=data.session.uid,
         groups=data.session.groups,
         extras=dict(email=data.session_email),
-        bound_site_id=data.bound_site_id,
+        site_ctx=data.site_ctx,
     )
     bound_sid = sessionsdb.create(**d)
     assert bound_sid != sid
-    assert bound_sid == sessionsdb.uid2sid(d["uid"], data.bound_site_id)
+    assert bound_sid == sessionsdb.uid2sid(d["uid"], data.site_ctx)
     assert sessionsdb.uid2bound_sids(d["uid"]) == [bound_sid]
     assert sessionsdb.exists(bound_sid)
 
