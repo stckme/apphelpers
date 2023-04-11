@@ -2,6 +2,10 @@
 History
 =======
 
+0.32.0 (2023-04-11)
+-------------------
+* Support for context bound sessions
+
 0.31.2 (2022-12-15)
 -------------------
 * Implement ReadWriteCachedModel.decrement()
