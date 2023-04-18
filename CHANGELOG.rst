@@ -2,6 +2,10 @@
 History
 =======
 
+0.32.1 (2023-04-18)
+-------------------
+* Support for resyncing & destroying context bound session
+
 0.32.0 (2023-04-11)
 -------------------
 * Support for context bound sessions

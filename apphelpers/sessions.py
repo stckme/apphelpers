@@ -143,9 +143,9 @@ class SessionDBHandler:
         self.remove_from_session(sid, removed_keys)
         self.update(sid, keyvalues)
 
-    def resync_for(self, uid, keyvalues):
+    def resync_for(self, uid, keyvalues, site_ctx=None):
         keyvalues["uid"] = uid
-        sid = self.uid2sid(uid)
+        sid = self.uid2sid(uid, site_ctx)
         return self.resync(sid, keyvalues) if sid else None
 
     def remove_from_session(self, sid, keys):
@@ -161,8 +161,8 @@ class SessionDBHandler:
         self.rconn.delete(rev_lookup_key(uid))
         return True
 
-    def destroy_for(self, uid):
-        sid = self.uid2sid(uid)
+    def destroy_for(self, uid, site_ctx=None):
+        sid = self.uid2sid(uid, site_ctx)
         return self.destroy(sid) if sid else None
 
     def destroy_all(self):
