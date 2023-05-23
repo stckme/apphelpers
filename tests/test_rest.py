@@ -14,6 +14,7 @@ class urls:
     echo_for_registered = base + "secure-echo"
     echo_for_groups = base + "echo-groups"
     echo_for_sitegroups = base + "sites/1/echo-groups"
+    echo_for_all_groups = base + "sites/1/echo-all-groups"
     echo_for_custom_authorization = base + "custom-authorization-echo"
 
 
@@ -176,10 +177,44 @@ def test_site_group_access():
     # 2. Forbidden group
     uid = 115
     groups = [globalgroups.forbidden.value]
-    site_groups = {1: [sitegroups.forbidden.value]}
+    site_groups = {1: [sitegroups.privileged.value]}
     d = dict(uid=uid, groups=groups, site_groups=site_groups)
     sid = sessionsdb.create(**d)
     url = urls.echo_for_sitegroups
+
+    headers = {"Authorization": sid}
+    assert requests.get(url, headers=headers).status_code == 403
+
+    # 3. Access group
+    uid = 116
+    groups = [globalgroups.privileged.value]
+    site_groups = {1: [sitegroups.privileged.value]}
+    d = dict(uid=uid, groups=groups, site_groups=site_groups)
+    sid = sessionsdb.create(**d)
+
+    headers = {"Authorization": sid}
+    assert requests.get(url, headers=headers).status_code == 200
+
+
+def test_all_site_group_access():
+    url = urls.echo_for_all_groups
+
+    # 1. No group
+    uid = 114
+    groups = []
+    site_groups = {}
+    d = dict(uid=uid, groups=groups, site_groups=site_groups)
+    sid = sessionsdb.create(**d)
+
+    headers = {"Authorization": sid}
+    assert requests.get(url, headers=headers).status_code == 403
+
+    # 2. Forbidden group
+    uid = 115
+    groups = [globalgroups.forbidden.value]
+    site_groups = {1: [sitegroups.forbidden.value]}
+    d = dict(uid=uid, groups=groups, site_groups=site_groups)
+    sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
     assert requests.get(url, headers=headers).status_code == 403
