@@ -92,6 +92,21 @@ def user_email(default=None, request=None, **kwargs):
 
 
 @hug.directive()
+def user_groups(default=None, request=None, **kwargs):
+    return request.context["user"].groups or tuple()
+
+
+@hug.directive()
+def user_site_groups(default=None, request=None, **kwargs):
+    return request.context["user"].site_groups or {}
+
+
+@hug.directive()
+def user_site_ctx(default=None, request=None, **kwargs):
+    return request.context["user"].site_ctx
+
+
+@hug.directive()
 def domain(default=None, request=None, **kwargs):
     return request.headers["HOST"]
 
