@@ -4,7 +4,9 @@ History
 
 0.33.0 (2023-05-23)
 -------------------
-* Support for new directives(user_groups, user_site_groups, user_site_ctx) & all_groups_required authorization
+* Support for new directives: user_groups, user_site_groups, user_site_ctx
+* Ambiguously named groups_required decorator is now replaced with any_group_required
+* New decorator: all_groups_required
 
 0.32.1 (2023-04-18)
 -------------------
