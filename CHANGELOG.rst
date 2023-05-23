@@ -4,7 +4,7 @@ History
 
 0.33.0 (2023-05-23)
 -------------------
-* Support for new directives(user_groups, user_site_groups, user_site_ctx)
+* Support for new directives(user_groups, user_site_groups, user_site_ctx) & all_groups_required authorization
 
 0.32.1 (2023-04-18)
 -------------------
