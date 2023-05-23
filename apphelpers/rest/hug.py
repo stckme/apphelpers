@@ -92,6 +92,21 @@ def user_email(default=None, request=None, **kwargs):
 
 
 @hug.directive()
+def user_groups(default=None, request=None, **kwargs):
+    return request.context["user"].groups or tuple()
+
+
+@hug.directive()
+def user_site_groups(default=None, request=None, **kwargs):
+    return request.context["user"].site_groups or {}
+
+
+@hug.directive()
+def user_site_ctx(default=None, request=None, **kwargs):
+    return request.context["user"].site_ctx
+
+
+@hug.directive()
 def domain(default=None, request=None, **kwargs):
     return request.headers["HOST"]
 
@@ -278,11 +293,12 @@ class APIFactory:
             This is the authentication + authorization part
             """
             login_required = getattr(f, "login_required", None)
-            groups_required = getattr(f, "groups_required", None)
+            any_group_required = getattr(f, "any_group_required", None)
+            all_groups_required = getattr(f, "all_groups_required", None)
             groups_forbidden = getattr(f, "groups_forbidden", None)
             authorizer = getattr(f, "authorizer", None)
 
-            if login_required or groups_required or groups_forbidden or authorizer:
+            if login_required or any_group_required or all_groups_required or groups_forbidden or authorizer:
 
                 @wraps(f)
                 def wrapper(request, *args, **kw):
@@ -296,7 +312,10 @@ class APIFactory:
                     # this is authorization part
                     groups = set(user.groups)
 
-                    if groups_required and not groups.intersection(groups_required):
+                    if any_group_required and groups.isdisjoint(any_group_required):
+                        raise HTTPForbidden("Unauthorized access")
+
+                    if all_groups_required and not groups.issuperset(all_groups_required):
                         raise HTTPForbidden("Unauthorized access")
 
                     if groups_forbidden and groups.intersection(groups_forbidden):
@@ -317,11 +336,12 @@ class APIFactory:
             This is the authentication + authorization part
             """
             login_required = getattr(f, "login_required", None)
-            groups_required = getattr(f, "groups_required", None)
+            any_group_required = getattr(f, "any_group_required", None)
+            all_groups_required = getattr(f, "all_groups_required", None)
             groups_forbidden = getattr(f, "groups_forbidden", None)
             authorizer = getattr(f, "authorizer", None)
 
-            if login_required or groups_required or groups_forbidden or authorizer:
+            if login_required or any_group_required or all_groups_required or groups_forbidden or authorizer:
 
                 @wraps(f)
                 def wrapper(request, *args, **kw):
@@ -346,7 +366,10 @@ class APIFactory:
                     if site_id:
                         groups = groups.union(user.site_groups.get(site_id, []))
 
-                    if groups_required and not groups.intersection(groups_required):
+                    if any_group_required and groups.isdisjoint(any_group_required):
+                        raise HTTPForbidden("Unauthorized access")
+
+                    if all_groups_required and not groups.issuperset(all_groups_required):
                         raise HTTPForbidden("Unauthorized access")
 
                     if groups_forbidden and groups.intersection(groups_forbidden):
