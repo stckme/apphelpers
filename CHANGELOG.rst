@@ -2,6 +2,10 @@
 History
 =======
 
+0.33.1 (2023-07-20)
+-------------------
+* site_id check fix for site-bound sessions
+
 0.33.0 (2023-05-23)
 -------------------
 * Support for new directives: user_groups, user_site_groups, user_site_ctx

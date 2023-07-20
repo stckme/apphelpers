@@ -358,7 +358,7 @@ class APIFactory:
                         raise HTTPUnauthorized("Invalid or expired session")
 
                     # bound site authorization
-                    if user.site_ctx and site_id != user.site_ctx:
+                    if user.site_ctx and site_id and site_id != user.site_ctx:
                         raise HTTPUnauthorized("Invalid or expired session")
 
                     # this is authorization part
