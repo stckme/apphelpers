@@ -2,6 +2,10 @@
 History
 =======
 
+0.33.2 (2023-07-20)
+-------------------
+* session destroy fix for site-bound sessions
+
 0.33.1 (2023-07-20)
 -------------------
 * site_id check fix for site-bound sessions
