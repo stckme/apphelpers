@@ -340,6 +340,7 @@ class APIFactory:
             all_groups_required = getattr(f, "all_groups_required", None)
             groups_forbidden = getattr(f, "groups_forbidden", None)
             authorizer = getattr(f, "authorizer", None)
+            ignore_site_ctx = getattr(f, "ignore_site_ctx", False)
 
             if login_required or any_group_required or all_groups_required or groups_forbidden or authorizer:
 
@@ -358,7 +359,7 @@ class APIFactory:
                         raise HTTPUnauthorized("Invalid or expired session")
 
                     # bound site authorization
-                    if user.site_ctx and site_id and site_id != user.site_ctx:
+                    if user.site_ctx and site_id != user.site_ctx and ignore_site_ctx is not True:
                         raise HTTPUnauthorized("Invalid or expired session")
 
                     # this is authorization part

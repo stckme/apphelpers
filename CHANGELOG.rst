@@ -2,6 +2,10 @@
 History
 =======
 
+0.33.3 (2023-07-25)
+-------------------
+* Support for new attribute "ignore_site_ctx"
+
 0.33.2 (2023-07-20)
 -------------------
 * session destroy fix for site-bound sessions
