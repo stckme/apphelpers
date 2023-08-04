@@ -23,6 +23,7 @@ def send_email(
     images=None,
     reply_to=None,
     bcc=None,
+    unsubscribe_url=None,
 ):
     """
     text: text message. If html is provided and not text, text will be auto generated
@@ -32,6 +33,7 @@ def send_email(
 
     sender: can be sender email string e.g. 'foo@example.com' or
     list/tuple sender name and email  ('Foo', 'foo@example.com')
+    unsubscribe_url: URL for unsubscribing, to be used in the List-Unsubscribe header
 
     """
     assert any((text, html)), "please provide html or text"
@@ -72,6 +74,8 @@ def send_email(
                 "Content-Disposition", f"attachment; filename= {file_name}"
             )
             msg.attach(file_part)
+    if unsubscribe_url:
+        msg.add_header("List-Unsubscribe", f"<{unsubscribe_url}>")
 
     context = ssl.create_default_context()
 
