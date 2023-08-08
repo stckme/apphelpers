@@ -2,6 +2,10 @@
 History
 =======
 
+0.33.4 (2023-08-08)
+-------------------
+* Support for addding additional headers added to email utility
+
 0.33.3 (2023-08-04)
 -------------------
 * For site-bound sessions, restrict access if site_id is missing
