@@ -23,6 +23,7 @@ def send_email(
     images=None,
     reply_to=None,
     bcc=None,
+    headers=None,
 ):
     """
     text: text message. If html is provided and not text, text will be auto generated
@@ -32,7 +33,7 @@ def send_email(
 
     sender: can be sender email string e.g. 'foo@example.com' or
     list/tuple sender name and email  ('Foo', 'foo@example.com')
-
+    headers: Dictionary of additional headers.
     """
     assert any((text, html)), "please provide html or text"
 
@@ -72,6 +73,9 @@ def send_email(
                 "Content-Disposition", f"attachment; filename= {file_name}"
             )
             msg.attach(file_part)
+    if headers:
+        for key, value in headers.items():
+            msg.add_header(key, value)
 
     context = ssl.create_default_context()
 
