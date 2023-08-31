@@ -4,7 +4,7 @@ History
 
 0.33.4 (2023-08-08)
 -------------------
-* Support for addding additional headers added to email utility
+* Support for optionally addding headers added to email message
 
 0.33.3 (2023-08-04)
 -------------------
