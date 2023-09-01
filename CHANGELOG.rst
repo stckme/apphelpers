@@ -2,6 +2,13 @@
 History
 =======
 
+0.34.0 (2023-09-01)
+
+* settings.INTERNAL_EMAIL_DOMAINS must me defined for email sending safety in
+  non-prod env.
+  e.g. INTERNAL_EMAIL_DOMAINS = ['example.com', 'example.org']
+  allows sending emails to only address ending with example.com or example.org
+
 0.33.5 (2023-08-08)
 -------------------
 * Reusable utility `format_msg` added in email module to format email message
