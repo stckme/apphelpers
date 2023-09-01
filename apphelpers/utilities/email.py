@@ -92,8 +92,8 @@ def send_email(
     """
     assert any((text, html)), "please provide html or text"
 
-    if settings.INTERNAL_EMAIL_DOMAINS:
-        # Make sure that we don't send emails to non-@DOMAIN emails in dev/stage
+    if settings.DEBUG or settings.APP_MPDE != "prod":
+        # Make sure that we don't send emails to external emails in dev/stage
         filtered_recipients = []
         for recpt in recipients:
             if isinstance(recpt, (list, tuple)):
