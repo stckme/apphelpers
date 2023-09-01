@@ -2,6 +2,10 @@
 History
 =======
 
+0.33.5 (2023-08-08)
+-------------------
+* Reusable utility `format_msg` added in email module to format email message
+
 0.33.4 (2023-08-08)
 -------------------
 * Support for optionally addding headers added to email message

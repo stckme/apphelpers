@@ -13,7 +13,7 @@ from email import encoders
 from converge import settings
 
 
-def send_email(
+def format_msg(
     sender,
     recipients,
     subject,
@@ -25,18 +25,6 @@ def send_email(
     bcc=None,
     headers=None,
 ):
-    """
-    text: text message. If html is provided and not text, text will be auto generated
-    html: html message
-    images: list of cid and image paths.
-        eg. [('logo', 'images/logo.png'), ('Bruce', 'images/bat.png')]
-
-    sender: can be sender email string e.g. 'foo@example.com' or
-    list/tuple sender name and email  ('Foo', 'foo@example.com')
-    headers: Dictionary of additional headers.
-    """
-    assert any((text, html)), "please provide html or text"
-
     if html and not text:
         text = html2text.html2text(html)
 
@@ -76,6 +64,44 @@ def send_email(
     if headers:
         for key, value in headers.items():
             msg.add_header(key, value)
+    return msg
+
+def send_email(
+    sender,
+    recipients,
+    subject,
+    text=None,
+    html=None,
+    attachments=None,
+    images=None,
+    reply_to=None,
+    bcc=None,
+    headers=None,
+):
+    """
+    text: text message. If html is provided and not text, text will be auto generated
+    html: html message
+    images: list of cid and image paths.
+        eg. [('logo', 'images/logo.png'), ('Bruce', 'images/bat.png')]
+
+    sender: can be sender email string e.g. 'foo@example.com' or
+    list/tuple sender name and email  ('Foo', 'foo@example.com')
+    headers: Dictionary of additional headers.
+    """
+    assert any((text, html)), "please provide html or text"
+
+    msg = format_msg(
+        sender,
+        recipients,
+        subject,
+        text,
+        html,
+        attachments,
+        images,
+        reply_to,
+        bcc,
+        headers,
+    )
 
     context = ssl.create_default_context()
 
