@@ -92,7 +92,7 @@ def send_email(
     """
     assert any((text, html)), "please provide html or text"
 
-    if settings.DEBUG or settings.APP_MODE != "prod":
+    if settings.EMAIL_RECIPIENT_DOMAINS:
         # Make sure that we don't send emails to non-@DOMAIN emails in dev/stage
         filtered_recipients = []
         for recpt in recipients:
@@ -101,11 +101,15 @@ def send_email(
             else:
                 email = recpt
 
-            if email.endswith(f"@{settings.DOMAIN}"):
+            if any(
+                email.endswith(f"@{domain}")
+                for domain in settings.EMAIL_RECIPIENT_DOMAINS
+            ):
                 filtered_recipients.append(recpt)
             else:
                 app_logger.info(
-                    f"Skipping email to {email} as it does not end with @{settings.DOMAIN}"
+                    f"Skipping email to {email} as it does not end with any of"
+                    f" {settings.EMAIL_RECIPIENT_DOMAINS}"
                 )
 
         recipients = filtered_recipients
