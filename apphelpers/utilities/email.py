@@ -1,16 +1,17 @@
-import html2text
 import os
 import smtplib
 import ssl
-
-from email.utils import formataddr
+from email import encoders
+from email.mime.base import MIMEBase
+from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.mime.image import MIMEImage
-from email.mime.base import MIMEBase
-from email import encoders
+from email.utils import formataddr
 
+import html2text
 from converge import settings
+
+from apphelpers.loggers import app_logger
 
 
 def format_msg(
@@ -66,6 +67,7 @@ def format_msg(
             msg.add_header(key, value)
     return msg
 
+
 def send_email(
     sender,
     recipients,
@@ -89,6 +91,24 @@ def send_email(
     headers: Dictionary of additional headers.
     """
     assert any((text, html)), "please provide html or text"
+
+    if settings.DEBUG or settings.APP_MODE != "prod":
+        # Make sure that we don't send emails to non-@DOMAIN emails in dev/stage
+        filtered_recipients = []
+        for recpt in recipients:
+            if isinstance(recpt, (list, tuple)):
+                _, email = recpt
+            else:
+                email = recpt
+
+            if email.endswith(f"@{settings.DOMAIN}"):
+                filtered_recipients.append(recpt)
+            else:
+                app_logger.info(
+                    f"Skipping email to {email} as it does not end with @{settings.DOMAIN}"
+                )
+
+        recipients = filtered_recipients
 
     msg = format_msg(
         sender,
