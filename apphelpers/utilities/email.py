@@ -92,7 +92,7 @@ def send_email(
     """
     assert any((text, html)), "please provide html or text"
 
-    if settings.DEBUG or settings.APP_MPDE != "prod":
+    if settings.DEBUG or settings.APP_MODE != "prod":
         # Make sure that we don't send emails to external emails in dev/stage
         filtered_recipients = []
         for recpt in recipients + (bcc or []):
