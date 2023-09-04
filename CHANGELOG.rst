@@ -4,7 +4,7 @@ History
 
 0.34.1 (2023-09-01)
 -------------------
-* Email INTERNAL_EMAIL_DOMAINS will also restrict bcc email recipients.
+* INTERNAL_EMAIL_DOMAINS will also restrict bcc email recipients.
 
 0.34.0 (2023-09-01)
 -------------------
