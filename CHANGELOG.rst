@@ -2,9 +2,10 @@
 History
 =======
 
-0.34.1 (2023-09-01)
+0.34.2 (2023-09-04)
 -------------------
 * Email INTERNAL_EMAIL_DOMAINS will also restrict bcc email recipients.
+* Fixed typo
 
 0.34.0 (2023-09-01)
 -------------------
