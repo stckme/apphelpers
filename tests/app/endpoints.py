@@ -22,7 +22,7 @@ def echo_groups(user: hug.directives.user = None):
     return user.groups
 
 
-echo_groups.groups_required = [globalgroups.privileged.value]
+echo_groups.any_group_required = [globalgroups.privileged.value]
 echo_groups.groups_forbidden = [globalgroups.forbidden.value]
 
 
@@ -63,8 +63,15 @@ def echo_multisite_groups(site_id: int, user: hug.directives.user = None):
     return user.groups
 
 
-echo_multisite_groups.groups_required = [sitegroups.privileged.value]
+echo_multisite_groups.any_group_required = [sitegroups.privileged.value]
 echo_multisite_groups.groups_forbidden = [sitegroups.forbidden.value]
+
+
+def echo_multisite_all_groups(site_id: int, user: hug.directives.user = None):
+    return user.groups + user.site_groups[site_id]
+
+
+echo_multisite_all_groups.all_groups_required = [globalgroups.privileged.value, sitegroups.privileged.value]
 
 
 def process_request(request, body):
@@ -106,6 +113,7 @@ def setup_routes(factory):
 
     factory.get("/sites/{site_id}/secure-echo/{word}")(secure_multisite_echo)
     factory.get("/sites/{site_id}/echo-groups")(echo_multisite_groups)
+    factory.get("/sites/{site_id}/echo-all-groups")(echo_multisite_all_groups)
     factory.get("/sites/{site_id}/snakes/{name}")(get_secure_snake)
 
     factory.post("/request-and-body")(process_request)

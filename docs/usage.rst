@@ -30,7 +30,13 @@ Boolean: True / False
 If this is set to True only authenticated users are allowed to access the API.
 By default APIs are public.
 
-groups_required
+any_group_required
+~~~~~~~~~~~~~~~
+List/Tuple
+
+User accessing the API must be member of any of the groups specified
+
+all_groups_required
 ~~~~~~~~~~~~~~~
 List/Tuple
 

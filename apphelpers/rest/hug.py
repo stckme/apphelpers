@@ -1,21 +1,22 @@
-from falcon import HTTPUnauthorized, HTTPForbidden, HTTPNotFound
+from dataclasses import asdict, dataclass
+
 import hug
 from converge import settings
 from falcon import HTTPForbidden, HTTPNotFound, HTTPUnauthorized
 from hug.decorators import wraps
 
 from apphelpers.db.peewee import dbtransaction
-from apphelpers.errors import InvalidSessionError
-from apphelpers.sessions import SessionDBHandler
-from converge import settings
-
-from apphelpers.rest.common import phony, User
+from apphelpers.errors import BaseError, InvalidSessionError
 from apphelpers.loggers import api_logger
 from apphelpers.sessions import SessionDBHandler
 
 if settings.get("HONEYBADGER_API_KEY"):
     from honeybadger import Honeybadger
     from honeybadger.utils import filter_dict
+
+
+def phony(f):
+    return f
 
 
 def raise_not_found_on_none(f):
@@ -32,6 +33,20 @@ def raise_not_found_on_none(f):
     return f
 
 
+def notify_honeybadger(honeybadger, error, func, args, kwargs):
+    try:
+        honeybadger.notify(
+            error,
+            context={
+                "func": func.__name__,
+                "args": args,
+                "kwargs": filter_dict(kwargs, settings.HB_PARAM_FILTERS),
+            },
+        )
+    finally:
+        pass
+
+
 def honeybadger_wrapper(hb):
     """
     wrapper that executes the function in a try/except
@@ -42,23 +57,19 @@ def honeybadger_wrapper(hb):
         @wraps(f)
         def f_wrapped(*args, **kw):
             try:
-                ret = f(*args, **kw)
+                return f(*args, **kw)
             except BaseError as e:
-                # Don't report BaseError
-                raise e
-            except Exception as e:
-                try:
-                    hb.notify(
-                        e,
-                        context={
-                            "func": f.__name__,
-                            "args": args,
-                            "kwargs": filter_dict(kw, settings.HB_PARAM_FILTERS),
-                        },
+                if e.report:
+                    notify_honeybadger(
+                        honeybadger=hb, error=e, func=f, args=args, kwargs=kw
                     )
-                finally:
-                    raise e
-            return ret
+                raise e
+
+            except Exception as e:
+                notify_honeybadger(
+                    honeybadger=hb, error=e, func=f, args=args, kwargs=kw
+                )
+                raise e
 
         return f_wrapped
 
@@ -81,6 +92,21 @@ def user_email(default=None, request=None, **kwargs):
 
 
 @hug.directive()
+def user_groups(default=None, request=None, **kwargs):
+    return request.context["user"].groups or tuple()
+
+
+@hug.directive()
+def user_site_groups(default=None, request=None, **kwargs):
+    return request.context["user"].site_groups or {}
+
+
+@hug.directive()
+def user_site_ctx(default=None, request=None, **kwargs):
+    return request.context["user"].site_ctx
+
+
+@hug.directive()
 def domain(default=None, request=None, **kwargs):
     return request.headers["HOST"]
 
@@ -90,23 +116,59 @@ def user_mobile(default=None, request=None, **kwargs):
     return request.context["user"].mobile
 
 
+@dataclass
+class User:
+    sid: str = None
+    id: int = None
+    name: str = None
+    groups: tuple = ()
+    email: str = None
+    mobile: str = None
+    site_groups: dict = None
+    site_ctx: None = None
+
+    def to_dict(self):
+        return asdict(self)
+
+    def __bool__(self):
+        return bool(self.id)
+
+
 def setup_strict_context_setter(sessions):
     def set_context(token):
 
-        uid, groups, name, email, mobile, site_groups = None, [], "", None, None, {}
+        uid, groups, name, email, mobile, site_groups, site_ctx = (
+            None,
+            [],
+            "",
+            None,
+            None,
+            {},
+            None,
+        )
 
         if token:
             try:
                 session = sessions.get(
-                    token, ["uid", "name", "groups", "email", "mobile", "site_groups"]
+                    token,
+                    [
+                        "uid",
+                        "name",
+                        "groups",
+                        "email",
+                        "mobile",
+                        "site_groups",
+                        "site_ctx",
+                    ],
                 )
-                uid, name, groups, email, mobile, site_groups = (
+                uid, name, groups, email, mobile, site_groups, site_ctx = (
                     session["uid"],
                     session["name"],
                     session["groups"],
                     session["email"],
                     session["mobile"],
                     session["site_groups"],
+                    session["site_ctx"],
                 )
             except InvalidSessionError:
                 raise HTTPUnauthorized("Invalid or expired session")
@@ -119,6 +181,7 @@ def setup_strict_context_setter(sessions):
             email=email,
             mobile=mobile,
             site_groups=site_groups,
+            site_ctx=site_ctx,
         )
 
     return set_context
@@ -130,20 +193,38 @@ def setup_context_setter(sessions):
         Only sets context based on session.
         Does not raise any error
         """
-        uid, groups, name, email, mobile, site_groups = None, [], "", None, None, {}
+        uid, groups, name, email, mobile, site_groups, site_ctx = (
+            None,
+            [],
+            "",
+            None,
+            None,
+            {},
+            None,
+        )
         token = request.get_header("Authorization")
         if token:
             try:
                 session = sessions.get(
-                    token, ["uid", "name", "groups", "email", "mobile", "site_groups"]
+                    token,
+                    [
+                        "uid",
+                        "name",
+                        "groups",
+                        "email",
+                        "mobile",
+                        "site_groups",
+                        "site_ctx",
+                    ],
                 )
-                uid, name, groups, email, mobile, site_groups = (
+                uid, name, groups, email, mobile, site_groups, site_ctx = (
                     session["uid"],
                     session["name"],
                     session["groups"],
                     session["email"],
                     session["mobile"],
                     session["site_groups"],
+                    session["site_ctx"],
                 )
                 if api_logger:
                     api_logger.info("{} | {} | {}", uid, request.method, request.url)
@@ -159,6 +240,7 @@ def setup_context_setter(sessions):
             email=email,
             mobile=mobile,
             site_groups=site_groups,
+            site_ctx=site_ctx,
         )
 
     return set_context
@@ -211,11 +293,12 @@ class APIFactory:
             This is the authentication + authorization part
             """
             login_required = getattr(f, "login_required", None)
-            groups_required = getattr(f, "groups_required", None)
+            any_group_required = getattr(f, "any_group_required", None)
+            all_groups_required = getattr(f, "all_groups_required", None)
             groups_forbidden = getattr(f, "groups_forbidden", None)
             authorizer = getattr(f, "authorizer", None)
 
-            if login_required or groups_required or groups_forbidden or authorizer:
+            if login_required or any_group_required or all_groups_required or groups_forbidden or authorizer:
 
                 @wraps(f)
                 def wrapper(request, *args, **kw):
@@ -229,7 +312,10 @@ class APIFactory:
                     # this is authorization part
                     groups = set(user.groups)
 
-                    if groups_required and not groups.intersection(groups_required):
+                    if any_group_required and groups.isdisjoint(any_group_required):
+                        raise HTTPForbidden("Unauthorized access")
+
+                    if all_groups_required and not groups.issuperset(all_groups_required):
                         raise HTTPForbidden("Unauthorized access")
 
                     if groups_forbidden and groups.intersection(groups_forbidden):
@@ -250,28 +336,40 @@ class APIFactory:
             This is the authentication + authorization part
             """
             login_required = getattr(f, "login_required", None)
-            groups_required = getattr(f, "groups_required", None)
+            any_group_required = getattr(f, "any_group_required", None)
+            all_groups_required = getattr(f, "all_groups_required", None)
             groups_forbidden = getattr(f, "groups_forbidden", None)
             authorizer = getattr(f, "authorizer", None)
 
-            if login_required or groups_required or groups_forbidden or authorizer:
+            if login_required or any_group_required or all_groups_required or groups_forbidden or authorizer:
 
                 @wraps(f)
                 def wrapper(request, *args, **kw):
 
                     user = request.context["user"]
+                    site_id = (
+                        int(kw[self.site_identifier])
+                        if self.site_identifier in kw
+                        else None
+                    )
 
                     # this is authentication part
                     if not user.id:
                         raise HTTPUnauthorized("Invalid or expired session")
 
+                    # bound site authorization
+                    if user.site_ctx and site_id != user.site_ctx:
+                        raise HTTPUnauthorized("Invalid or expired session")
+
                     # this is authorization part
                     groups = set(user.groups)
-                    if self.site_identifier in kw:
-                        site_id = int(kw[self.site_identifier])
+                    if site_id:
                         groups = groups.union(user.site_groups.get(site_id, []))
 
-                    if groups_required and not groups.intersection(groups_required):
+                    if any_group_required and groups.isdisjoint(any_group_required):
+                        raise HTTPForbidden("Unauthorized access")
+
+                    if all_groups_required and not groups.issuperset(all_groups_required):
                         raise HTTPForbidden("Unauthorized access")
 
                     if groups_forbidden and groups.intersection(groups_forbidden):
