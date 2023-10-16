@@ -19,3 +19,6 @@ requests_oauthlib
 PyJWT
 black
 pre-commit
+fastapi
+pytest
+uvicorn

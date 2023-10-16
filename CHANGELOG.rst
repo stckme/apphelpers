@@ -2,6 +2,10 @@
 History
 =======
 
+0.90.0 (2023-10-16)
+-------------------
+* Support for FastAPI framework.
+
 0.34.2 (2023-09-04)
 -------------------
 * Email INTERNAL_EMAIL_DOMAINS will also restrict bcc email recipients.
