@@ -40,6 +40,6 @@ setup(
     test_suite="tests",
     tests_require=test_requirements,
     url="https://github.com/scrolltech/apphelpers",
-    version="0.34.2",
+    version="0.90.0",
     zip_safe=False,
 )

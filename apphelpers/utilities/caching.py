@@ -1,5 +1,7 @@
 import json
 
+https://stackoverflow.com/questions/44323454/multiple-keys-pointing-to-a-single-value-in-redis-cache-with-java
+https://redis-py.readthedocs.io/en/stable/lua_scripting.html
 
 class ReadOnlyCachedModel:
     """
@@ -9,11 +11,19 @@ class ReadOnlyCachedModel:
     connection = None
     ns = None
     key_fields = None
+    secondary_key_fields = None
 
     @classmethod
     def prefix_key(cls, data):
         key = cls.ns
         for field in cls.key_fields:
+            key += f":{data[field]}"
+        return key
+    
+    @classmethod
+    def secondary_prefix_key(cls, data):
+        key = f"{cls.ns}:s"
+        for field in cls.secondary_key_fields:
             key += f":{data[field]}"
         return key
 
