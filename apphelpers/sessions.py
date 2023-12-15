@@ -1,10 +1,10 @@
 import secrets
+
 import _pickle as pickle
-import redis
 import hug
+import redis
 
 from apphelpers.errors import InvalidSessionError
-
 
 _SEP = ":"
 session_key = ("session" + _SEP).__add__

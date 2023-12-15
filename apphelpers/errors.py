@@ -2,7 +2,6 @@ from falcon import HTTPError, status_codes
 
 
 class BaseError(HTTPError):
-
     # Whether to report this error to honeybadger
     report = True
 

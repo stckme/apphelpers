@@ -1,14 +1,15 @@
-import fastapi
-from functools import wraps
-import sys
 import os
+import sys
+from functools import wraps
+
+import fastapi
 
 sys.path.append(os.getcwd() + "/..")
 
+import settings
+
 from apphelpers.rest.fastapi import APIFactory
 from fastapi_tests.app.endpoints import setup_routes
-
-import settings
 
 
 def make_app():

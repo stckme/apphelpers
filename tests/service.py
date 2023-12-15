@@ -1,9 +1,8 @@
 import hug
+import settings
 
 from apphelpers.rest.hug import APIFactory
 from tests.app.endpoints import setup_routes
-
-import settings
 
 
 def make_app():

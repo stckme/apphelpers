@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 from collections import namedtuple
 
+import settings
 from nose.tools import raises
 
 import apphelpers.sessions as sessionslib
-import settings
-
 from apphelpers.errors import InvalidSessionError
-
 
 sessiondb_conn = dict(
     host=settings.SESSIONSDB_HOST,

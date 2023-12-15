@@ -1,5 +1,5 @@
-from kombu import Queue
 from celery import Celery as BaseCelery
+from kombu import Queue
 
 
 class Celery(BaseCelery):
