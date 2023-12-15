@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import secrets
+from typing import Any
 
 import _pickle as pickle
-import hug
 import redis
 
 from apphelpers.errors import InvalidSessionError
@@ -75,7 +77,7 @@ class SessionDBHandler:
     def exists(self, sid):
         return self.rconn.exists(session_key(sid))
 
-    def get(self, sid, keys=[]):
+    def get(self, sid, keys=[]) -> dict[str, Any]:
         s_values = self.rconn.hgetall(session_key(sid))
         if not s_values:
             raise InvalidSessionError()
@@ -189,10 +191,3 @@ class SessionDBHandler:
             if sids:
                 self.rconn.delete(*sids)
             self.rconn.delete(*keys)
-
-
-def whoami(user: hug.directives.user):
-    return user.to_dict()
-
-
-whoami.login_required = True

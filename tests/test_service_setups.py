@@ -2,8 +2,8 @@
 
 
 def test_basic():
-    import tests.services.basic
+    import tests.services.basic  # noqa: F401
 
 
 def test_session():
-    import tests.services.session
+    import tests.services.session  # noqa: F401

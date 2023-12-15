@@ -1,7 +1,11 @@
 import settings
 from peewee import TextField
 
-from apphelpers.db.peewee import create_base_model, create_pgdb_pool, dbtransaction
+from apphelpers.db.peewee import (
+    create_base_model,
+    create_pgdb_pool,
+    dbtransaction,
+)
 
 db = create_pgdb_pool(database=settings.DB_NAME, user=settings.DB_USER)
 BaseModel = create_base_model(db)
@@ -18,7 +22,7 @@ def _add_book(name):
 
 def _add_book_loser(name):
     _add_book(name)
-    loser  # will raise
+    loser  # will raise  # noqa: F821
 
 
 def setup_module():

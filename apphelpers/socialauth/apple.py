@@ -5,7 +5,7 @@ import requests
 
 try:
     from converge import settings
-except:
+except ImportError:
     import settings
 
 

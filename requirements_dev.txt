@@ -22,3 +22,9 @@ pre-commit
 fastapi
 pytest
 uvicorn
+celery
+requests
+types-requests
+types-pytz
+types-redis
+redis

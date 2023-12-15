@@ -15,10 +15,11 @@ Example
 
 .. code-block:: python
 
+   from apphelpers.rest import endpoint as ep
+
+   @ep.login_required
    def foo_api():
       return "bar"
-
-   foo_api.login_required = True
 
 Supported directives
 --------------------
@@ -44,10 +45,12 @@ User accessing the API must be member of all the groups specified
 
 .. code-block:: python
 
+   from apphelpers.rest import endpoint as ep
+
+   @ep.all_groups_required('admin', 'moderator')
    def foo_api():
       return "bar"
 
-   foo_api.groups_required = ['admin', 'moderator']
 
 
 groups_forbidden

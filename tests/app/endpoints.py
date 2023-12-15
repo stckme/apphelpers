@@ -1,8 +1,7 @@
-from enum import Enum
-
 import hug
 import hug.directives
 
+from apphelpers.rest import endpoint as ep
 from apphelpers.rest.hug import user_id
 from tests.app.models import globalgroups, sitegroups
 
@@ -11,92 +10,72 @@ def echo(word, user: hug.directives.user = None):
     return "%s:%s" % (user.id, word) if user else word
 
 
+@ep.login_required
 def secure_echo(word, user: hug.directives.user = None):
     return "%s:%s" % (user.id, word) if user else word
 
 
-secure_echo.login_required = True
-
-
+@ep.any_group_required(globalgroups.privileged.value)
+@ep.groups_forbidden(globalgroups.forbidden.value)
 def echo_groups(user: hug.directives.user = None):
     return user.groups
-
-
-echo_groups.any_group_required = [globalgroups.privileged.value]
-echo_groups.groups_forbidden = [globalgroups.forbidden.value]
 
 
 def add(nums: hug.types.multiple):
     return sum(int(x) for x in nums)
 
 
+@ep.login_required
 def get_my_uid(uid: user_id):
     return uid
 
 
-get_my_uid.login_required = True
-
-
+@ep.not_found_on_none
 def get_snake(name):
     return None
 
 
-get_snake.not_found_on_none = True
-
-
+@ep.login_required
+@ep.not_found_on_none
 def get_secure_snake(site_id, name):
     return None
 
 
-get_secure_snake.not_found_on_none = True
-get_secure_snake.login_required = True
-
-
+@ep.login_required
 def secure_multisite_echo(word, user: hug.directives.user = None):
     return "%s:%s" % (user.id, word) if user else word
 
 
-secure_echo.login_required = True
-
-
+@ep.any_group_required(sitegroups.privileged.value)
+@ep.groups_forbidden(globalgroups.forbidden.value)
 def echo_multisite_groups(site_id: int, user: hug.directives.user = None):
     return user.groups
 
 
-echo_multisite_groups.any_group_required = [sitegroups.privileged.value]
-echo_multisite_groups.groups_forbidden = [sitegroups.forbidden.value]
-
-
-def echo_multisite_all_groups(site_id: int, user: hug.directives.user = None):
-    return user.groups + user.site_groups[site_id]
-
-
-echo_multisite_all_groups.all_groups_required = [
+@ep.all_groups_required(
     globalgroups.privileged.value,
     sitegroups.privileged.value,
-]
+)
+def echo_multisite_all_groups(site_id: int, user: hug.directives.user = None):
+    return user.groups + user.site_groups[site_id]
 
 
 def process_request(request, body):
     return {"body": body, "headers": request.headers}
 
 
+@ep.not_found_on_none
 def process_raw_request(request):
     return {"raw_body": request.stream.read().decode(), "headers": request.headers}
-
-
-process_raw_request.not_found_on_none = True
 
 
 def check_authorization(user, *args, **kw):
     return kw["word"] == "authorized"
 
 
+@ep.authorizer(check_authorization)
 def custom_authorization_echo(word):
     return word
-
-
-custom_authorization_echo.authorizer = check_authorization
 
 
 def setup_routes(factory):

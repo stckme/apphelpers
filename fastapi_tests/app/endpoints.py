@@ -1,4 +1,9 @@
-from apphelpers.rest.fastapi import json_body, user, user_id
+from apphelpers.rest import endpoint as ep
+from apphelpers.rest.fastapi import (
+    json_body,
+    user,
+    user_id,
+)
 
 
 def echo(word, user=user):
@@ -13,70 +18,54 @@ def echo_post(data=json_body, user=user):
     return "%s:%s" % (user.id, data) if user else data
 
 
+@ep.login_required
 def secure_echo(word, user=user_id):
     return "%s:%s" % (user.id, word) if user else word
 
 
-secure_echo.login_required = True
-
-
+@ep.groups_forbidden("noaccess-group")
+@ep.all_groups_required("access-group")
 def echo_groups(user=user):
     return user.groups
 
 
-echo_groups.groups_required = ["access-group"]
-echo_groups.groups_forbidden = ["forbidden-group"]
-
-
+@ep.groups_forbidden("noaccess-group")
+@ep.all_groups_required("access-group")
 async def echo_groups_async(user=user):
     return user.groups
-
-
-echo_groups_async.groups_required = ["access-group"]
-echo_groups_async.groups_forbidden = ["forbidden-group"]
 
 
 def add(nums):
     return sum(int(x) for x in nums)
 
 
+@ep.login_required
 def get_my_uid(body=json_body):
     return body["uid"]
 
 
-get_my_uid.login_required = True
-
-
+@ep.login_required
+@ep.not_found_on_none
 def get_snake(name=None):
     return name
 
 
-get_snake.not_found_on_none = True
-get_snake.login_required = True
-
-
+@ep.login_required
+@ep.not_found_on_none
 async def get_snake_async(name=None):
     return name
 
 
-get_snake.not_found_on_none = True
-get_snake.login_required = True
-
-
+@ep.all_groups_required("access-group")
+@ep.groups_forbidden("noaccess-group")
 def echo_site_groups(site_id: int, user=user):
     return user.site_groups[site_id]
 
 
-echo_site_groups.groups_required = ["access-group"]
-echo_site_groups.groups_forbidden = ["forbidden-group"]
-
-
+@ep.all_groups_required("access-group")
+@ep.groups_forbidden("noaccess-group")
 async def echo_site_groups_async(site_id: int, user=user):
     return user.site_groups[site_id]
-
-
-echo_site_groups_async.groups_required = ["access-group"]
-echo_site_groups_async.groups_forbidden = ["forbidden-group"]
 
 
 def setup_routes(factory):
