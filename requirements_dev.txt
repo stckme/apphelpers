@@ -28,3 +28,4 @@ types-requests
 types-pytz
 types-redis
 redis
+loguru

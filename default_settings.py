@@ -1,6 +1,8 @@
 DEBUG = True
 DB_NAME = "defaultdb"
 DB_USER = "postgres"
+DB_PASS = "postgres"
+DB_HOST = "localhost"
 
 SESSIONSDB_HOST = "127.0.0.1"
 SESSIONSDB_PORT = 6379

@@ -68,7 +68,8 @@ Ready to contribute? Here's how to set up `apphelpers` for local development.
 
     $ mkvirtualenv apphelpers
     $ cd apphelpers/
-    $ python setup.py develop
+    $ pip install -e .
+    $ pip install -r requirements_dev.txt
 
 4. Create a branch for local development::
 
@@ -119,7 +120,7 @@ Tips
 To run a subset of tests::
 
 
-    $ python -m unittest tests.test_apphelpers
+    $ pytest ./tests/test_rest.py
 
 Deploying
 ---------
