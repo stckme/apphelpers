@@ -8,39 +8,39 @@ from fastapi import HTTPException, status
 class BaseError(HTTPException):
     # Whether to report this error to honeybadger
     report: ClassVar[bool] = True
+    status_code: ClassVar[int] = status.HTTP_500_INTERNAL_SERVER_ERROR
 
     detail: str = "Something went wrong"
-    status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR
 
 
 @dataclass
 class HTTP400BadRequest(BaseError):
+    status_code: ClassVar[int] = status.HTTP_400_BAD_REQUEST
     detail: str = "Bad Request"
-    status_code: int = status.HTTP_400_BAD_REQUEST
 
 
 @dataclass
 class HTTP401Unauthorized(BaseError):
+    status_code: ClassVar[int] = status.HTTP_401_UNAUTHORIZED
     detail: str = "Unauthorized"
-    status_code: int = status.HTTP_401_UNAUTHORIZED
 
 
 @dataclass
 class HTTP403Forbidden(BaseError):
+    status_code: ClassVar[int] = status.HTTP_403_FORBIDDEN
     detail: str = "Forbidden"
-    status_code: int = status.HTTP_403_FORBIDDEN
 
 
 @dataclass
 class HTTP404NotFound(BaseError):
+    status_code: ClassVar[int] = status.HTTP_404_NOT_FOUND
     detail: str = "Not Found"
-    status_code: int = status.HTTP_404_NOT_FOUND
 
 
 @dataclass
 class HTTP409Conflict(BaseError):
+    status_code: ClassVar[int] = status.HTTP_409_CONFLICT
     detail: str = "Conflict"
-    status_code: int = status.HTTP_409_CONFLICT
 
 
 @dataclass
