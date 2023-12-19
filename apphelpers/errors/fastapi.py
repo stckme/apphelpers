@@ -16,31 +16,31 @@ class BaseError(HTTPException):
 @dataclass
 class HTTP400BadRequest(BaseError):
     detail: str = "Bad Request"
-    status_code = status.HTTP_400_BAD_REQUEST
+    status_code: int = status.HTTP_400_BAD_REQUEST
 
 
 @dataclass
 class HTTP401Unauthorized(BaseError):
     detail: str = "Unauthorized"
-    status_code = status.HTTP_401_UNAUTHORIZED
+    status_code: int = status.HTTP_401_UNAUTHORIZED
 
 
 @dataclass
 class HTTP403Forbidden(BaseError):
     detail: str = "Forbidden"
-    status_code = status.HTTP_403_FORBIDDEN
+    status_code: int = status.HTTP_403_FORBIDDEN
 
 
 @dataclass
 class HTTP404NotFound(BaseError):
     detail: str = "Not Found"
-    status_code = status.HTTP_404_NOT_FOUND
+    status_code: int = status.HTTP_404_NOT_FOUND
 
 
 @dataclass
 class HTTP409Conflict(BaseError):
     detail: str = "Conflict"
-    status_code = status.HTTP_409_CONFLICT
+    status_code: int = status.HTTP_409_CONFLICT
 
 
 @dataclass
