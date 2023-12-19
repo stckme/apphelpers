@@ -136,7 +136,6 @@ class User:
 
 def setup_strict_context_setter(sessions):
     def set_context(token):
-
         uid, groups, name, email, mobile, site_groups, site_ctx = (
             None,
             [],
@@ -298,11 +297,16 @@ class APIFactory:
             groups_forbidden = getattr(f, "groups_forbidden", None)
             authorizer = getattr(f, "authorizer", None)
 
-            if login_required or any_group_required or all_groups_required or groups_forbidden or authorizer:
+            if (
+                login_required
+                or any_group_required
+                or all_groups_required
+                or groups_forbidden
+                or authorizer
+            ):
 
                 @wraps(f)
                 def wrapper(request, *args, **kw):
-
                     user = request.context["user"]
 
                     # this is authentication part
@@ -315,7 +319,9 @@ class APIFactory:
                     if any_group_required and groups.isdisjoint(any_group_required):
                         raise HTTPForbidden("Unauthorized access")
 
-                    if all_groups_required and not groups.issuperset(all_groups_required):
+                    if all_groups_required and not groups.issuperset(
+                        all_groups_required
+                    ):
                         raise HTTPForbidden("Unauthorized access")
 
                     if groups_forbidden and groups.intersection(groups_forbidden):
@@ -341,11 +347,16 @@ class APIFactory:
             groups_forbidden = getattr(f, "groups_forbidden", None)
             authorizer = getattr(f, "authorizer", None)
 
-            if login_required or any_group_required or all_groups_required or groups_forbidden or authorizer:
+            if (
+                login_required
+                or any_group_required
+                or all_groups_required
+                or groups_forbidden
+                or authorizer
+            ):
 
                 @wraps(f)
                 def wrapper(request, *args, **kw):
-
                     user = request.context["user"]
                     site_id = (
                         int(kw[self.site_identifier])
@@ -369,7 +380,9 @@ class APIFactory:
                     if any_group_required and groups.isdisjoint(any_group_required):
                         raise HTTPForbidden("Unauthorized access")
 
-                    if all_groups_required and not groups.issuperset(all_groups_required):
+                    if all_groups_required and not groups.issuperset(
+                        all_groups_required
+                    ):
                         raise HTTPForbidden("Unauthorized access")
 
                     if groups_forbidden and groups.intersection(groups_forbidden):

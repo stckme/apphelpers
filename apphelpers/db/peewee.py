@@ -1,15 +1,13 @@
-import pytz
 import datetime
 import logging
 import os
-
 from enum import Enum
 
-from peewee import Model, Field
+import pytz
+from peewee import Field, Model
 from playhouse.pool import PooledPostgresqlExtDatabase
-from playhouse.shortcuts import model_to_dict
 from playhouse.postgres_ext import DateTimeTZField
-
+from playhouse.shortcuts import model_to_dict
 
 try:
     from hug.decorators import wraps

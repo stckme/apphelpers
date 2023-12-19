@@ -1,8 +1,7 @@
 import requests
+from converge import settings
 
 import apphelpers.sessions as sessionslib
-
-from converge import settings
 
 base_url = "http://127.0.0.1:5000/"
 echo_url = base_url + "echo"

@@ -1,4 +1,5 @@
 import os
+
 from requests_oauthlib import OAuth2Session
 
 try:

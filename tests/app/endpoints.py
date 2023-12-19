@@ -1,9 +1,9 @@
 from enum import Enum
+
 import hug
 import hug.directives
 
 from apphelpers.rest.hug import user_id
-
 from tests.app.models import globalgroups, sitegroups
 
 
@@ -71,7 +71,10 @@ def echo_multisite_all_groups(site_id: int, user: hug.directives.user = None):
     return user.groups + user.site_groups[site_id]
 
 
-echo_multisite_all_groups.all_groups_required = [globalgroups.privileged.value, sitegroups.privileged.value]
+echo_multisite_all_groups.all_groups_required = [
+    globalgroups.privileged.value,
+    sitegroups.privileged.value,
+]
 
 
 def process_request(request, body):
@@ -97,7 +100,6 @@ custom_authorization_echo.authorizer = check_authorization
 
 
 def setup_routes(factory):
-
     factory.get("/echo/{word}")(echo)
     factory.post("/echo")(echo)
 

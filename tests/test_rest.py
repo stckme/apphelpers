@@ -1,11 +1,12 @@
 import os
-import requests
 import time
+
+import requests
+from converge import settings
+
 import apphelpers.sessions as sessionslib
 
 from .app.models import globalgroups, sitegroups
-
-from converge import settings
 
 
 class urls:

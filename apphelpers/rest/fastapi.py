@@ -2,17 +2,15 @@ import http
 import inspect
 from functools import wraps
 
-from starlette.requests import Request
-from fastapi import APIRouter, HTTPException, Depends
-
+from converge import settings
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.routing import APIRoute
+from starlette.requests import Request
 
 from apphelpers.db.peewee import dbtransaction
 from apphelpers.errors import InvalidSessionError
+from apphelpers.rest.common import User, phony
 from apphelpers.sessions import SessionDBHandler
-from apphelpers.rest.common import phony, User
-from converge import settings
-
 
 if settings.get("HONEYBADGER_API_KEY"):
     from honeybadger import Honeybadger
@@ -353,7 +351,6 @@ class APIFactory:
 
                 @wraps(f)
                 async def wrapper(_request, *args, **kw):
-
                     user = _request.state.user
 
                     # this is authentication part
