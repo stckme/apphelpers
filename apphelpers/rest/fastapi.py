@@ -1,14 +1,19 @@
-import http
 import inspect
 from functools import wraps
 
 from converge import settings
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.routing import APIRoute
 from starlette.requests import Request
 
 from apphelpers.db.peewee import dbtransaction
-from apphelpers.errors import InvalidSessionError
+from apphelpers.errors.fastapi import (
+    HTTP401Unauthorized,
+    HTTP403Forbidden,
+    HTTP404NotFound,
+    InvalidSessionError,
+)
+from apphelpers.rest import endpoint as ep
 from apphelpers.rest.common import User, phony
 from apphelpers.sessions import SessionDBHandler
 
@@ -18,15 +23,13 @@ if settings.get("HONEYBADGER_API_KEY"):
 
 
 def raise_not_found_on_none(f):
-    if getattr(f, "not_found_on_none", None) == True:
+    if getattr(f, "not_found_on_none", None) is True:
 
         @wraps(f)
         def wrapper(*ar, **kw):
             ret = f(*ar, **kw)
             if ret is None:
-                raise HTTPException(
-                    status_code=http.HTTPStatus.NOT_FOUND.value, details="four o four"
-                )
+                raise HTTP404NotFound()
             return ret
 
         return wrapper
@@ -120,28 +123,36 @@ class SecureRouter(APIRoute):
         original_route_handler = super().get_route_handler()
 
         async def custom_route_handler(_request: Request):
-            uid, groups, name, email, mobile, site_groups = None, [], "", None, None, {}
+            uid, groups, name, email, mobile, site_groups = (
+                None,
+                [],
+                "",
+                None,
+                None,
+                {},
+            )
 
             token = _request.headers.get("Authorization")
             if token:
-                try:
-                    session = self.sessions.get(
-                        token,
-                        ["uid", "name", "groups", "email", "mobile", "site_groups"],
-                    )
-                    uid, name, groups, email, mobile, site_groups = (
-                        session["uid"],
-                        session["name"],
-                        session["groups"],
-                        session["email"],
-                        session["mobile"],
-                        session["site_groups"],
-                    )
-                except InvalidSessionError:
-                    raise HTTPException(
-                        status_code=http.HTTPStatus.UNAUTHORIZED.value,
-                        details="Invalid or expired session",
-                    )
+                session = self.sessions.get(  # type: ignore
+                    token,
+                    [
+                        "uid",
+                        "name",
+                        "groups",
+                        "email",
+                        "mobile",
+                        "site_groups",
+                    ],
+                )
+                uid, name, groups, email, mobile, site_groups = (
+                    session["uid"],
+                    session["name"],
+                    session["groups"],
+                    session["email"],
+                    session["mobile"],
+                    session["site_groups"],
+                )
 
             _request.state.user = User(
                 sid=token,
@@ -188,7 +199,7 @@ class Router(APIRoute):
             token = _request.headers.get("Authorization")
             if token:
                 try:
-                    session = self.sessions.get(
+                    session = self.sessions.get(  # type: ignore
                         token,
                         ["uid", "name", "groups", "email", "mobile", "site_groups"],
                     )
@@ -277,11 +288,18 @@ class APIFactory:
             This is the authentication + authorization part
             """
             login_required = getattr(f, "login_required", None)
-            groups_required = getattr(f, "groups_required", None)
+            any_group_required = getattr(f, "any_group_required", None)
+            all_groups_required = getattr(f, "all_groups_required", None)
             groups_forbidden = getattr(f, "groups_forbidden", None)
             authorizer = getattr(f, "authorizer", None)
 
-            if login_required or groups_required or groups_forbidden or authorizer:
+            if (
+                login_required
+                or any_group_required
+                or all_groups_required
+                or groups_forbidden
+                or authorizer
+            ):
 
                 @wraps(f)
                 async def wrapper(_request, *args, **kw):
@@ -289,31 +307,24 @@ class APIFactory:
 
                     # this is authentication part
                     if not user.id:
-                        raise HTTPException(
-                            status_code=http.HTTPStatus.UNAUTHORIZED.value,
-                            detail="Invalid or expired session",
-                        )
+                        raise HTTP401Unauthorized("Invalid or expired session")
 
                     # this is authorization part
                     groups = set(user.groups)
 
-                    if groups_required and not groups.intersection(groups_required):
-                        raise HTTPException(
-                            status_code=http.HTTPStatus.FORBIDDEN.value,
-                            detail="Unauthorized access",
-                        )
+                    if any_group_required and groups.isdisjoint(any_group_required):
+                        raise HTTP403Forbidden("Unauthorized access")
+
+                    if all_groups_required and not groups.issuperset(
+                        all_groups_required
+                    ):
+                        raise HTTP403Forbidden("Unauthorized access")
 
                     if groups_forbidden and groups.intersection(groups_forbidden):
-                        raise HTTPException(
-                            status_code=http.HTTPStatus.FORBIDDEN.value,
-                            detail="Unauthorized access",
-                        )
+                        raise HTTP403Forbidden("Unauthorized access")
 
                     if authorizer and not authorizer(user, *args, **kw):
-                        raise HTTPException(
-                            status_code=http.HTTPStatus.FORBIDDEN.value,
-                            detail="Unauthorized access",
-                        )
+                        raise HTTP403Forbidden("Unauthorized access")
 
                     return (
                         await f(*args, **kw)
@@ -342,23 +353,28 @@ class APIFactory:
             """
             This is the authentication + authorization part
             """
+
             login_required = getattr(f, "login_required", None)
-            groups_required = getattr(f, "groups_required", None)
+            any_group_required = getattr(f, "any_group_required", None)
+            all_groups_required = getattr(f, "all_groups_required", None)
             groups_forbidden = getattr(f, "groups_forbidden", None)
             authorizer = getattr(f, "authorizer", None)
 
-            if login_required or groups_required or groups_forbidden or authorizer:
+            if (
+                login_required
+                or any_group_required
+                or all_groups_required
+                or groups_forbidden
+                or authorizer
+            ):
 
                 @wraps(f)
                 async def wrapper(_request, *args, **kw):
-                    user = _request.state.user
+                    user: User = _request.state.user
 
                     # this is authentication part
                     if not user.id:
-                        raise HTTPException(
-                            status_code=http.HTTPStatus.UNAUTHORIZED.value,
-                            detail="Invalid or expired session",
-                        )
+                        raise HTTP401Unauthorized("Invalid or expired session")
 
                     # this is authorization part
                     groups = set(user.groups)
@@ -366,23 +382,19 @@ class APIFactory:
                         site_id = int(kw[self.site_identifier])
                         groups = groups.union(user.site_groups.get(site_id, []))
 
-                    if groups_required and not groups.intersection(groups_required):
-                        raise HTTPException(
-                            status_code=http.HTTPStatus.FORBIDDEN.value,
-                            detail="Unauthorized access",
-                        )
+                    if any_group_required and groups.isdisjoint(any_group_required):
+                        raise HTTP403Forbidden("Unauthorized access")
+
+                    if all_groups_required and not groups.issuperset(
+                        all_groups_required
+                    ):
+                        raise HTTP403Forbidden("Unauthorized access")
 
                     if groups_forbidden and groups.intersection(groups_forbidden):
-                        raise HTTPException(
-                            status_code=http.HTTPStatus.FORBIDDEN.value,
-                            detail="Unauthorized access",
-                        )
+                        raise HTTP403Forbidden("Unauthorized access")
 
                     if authorizer and not authorizer(user, *args, **kw):
-                        raise HTTPException(
-                            status_code=http.HTTPStatus.FORBIDDEN.value,
-                            detail="Unauthorized access",
-                        )
+                        raise HTTP403Forbidden("Unauthorized access")
 
                     return (
                         await f(*args, **kw)
@@ -412,12 +424,13 @@ class APIFactory:
         )
 
     def choose_router(self, f):
-        login_required = hasattr(f, "login_required") and f.login_required
+        login_required = getattr(f, "login_required", None) is True
         return self.secure_router if login_required else self.router
 
     def build(self, method, method_args, method_kw, f):
         print(
-            f"{method_args[0]} [{method.__name__.upper()}] => {f.__module__}:{f.__name__}"
+            f"{method_args[0]}",
+            f"[{method.__name__.upper()}] => {f.__module__}:{f.__name__}",
         )
         m = method(*method_args, **method_kw)
         f = self.access_wrapper(
@@ -495,3 +508,8 @@ class APIFactory:
             self.patch(resource_url)(update_resource)
         if delete_resource:
             self.delete(resource_url)(delete_resource)
+
+
+@ep.login_required
+def whoami(user: User = user):
+    return user.to_dict()

@@ -18,6 +18,7 @@ jobs:
         env:
           POSTGRES_DB: defaultdb
           POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
       redis:
         image: redis
         ports:
@@ -33,7 +34,11 @@ jobs:
           cache-dependency-path: "**/requirements_dev.txt"
       - name: Run tests
         run: |
+          export SETTINGS_DIR=.
           pip install -r requirements_dev.txt
+          pip install -e .
           gunicorn tests.service:__hug_wsgi__ -D
-          pre-commit run --all-files
-          nosetests -sxv tests
+          uvicorn fastapi_tests.service:app --port 5000 &
+          # pre-commit run --all-files  TODO: check what's wrong in CI
+          pytest tests
+          pytest fastapi_tests

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from collections import namedtuple
 
+import pytest
 import settings
-from nose.tools import raises
 
 import apphelpers.sessions as sessionslib
 from apphelpers.errors import InvalidSessionError
@@ -107,10 +107,10 @@ def test_resync():
     assert k not in d
 
 
-@raises(InvalidSessionError)
 def test_delete():
     sessionsdb.destroy(state.sid)
-    assert sessionsdb.get(state.sid)
+    with pytest.raises(InvalidSessionError):
+        sessionsdb.get(state.sid)
 
 
 def test_session_lookups():
@@ -120,4 +120,5 @@ def test_session_lookups():
         sid = sessionsdb.create(uid, groups)
         assert sessionsdb.sid2uidgroups(sid) == (uid, groups)
         sessionsdb.destroy(sid)
-        raises(InvalidSessionError)(sessionsdb.get)(sid)
+        with pytest.raises(InvalidSessionError):
+            sessionsdb.get(sid)

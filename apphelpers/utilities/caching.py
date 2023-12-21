@@ -1,4 +1,14 @@
+from __future__ import annotations
+
 import json
+from typing import (
+    Any,
+    ClassVar,
+    List,
+    Optional,
+)
+
+from redis import Redis
 
 
 class ReadOnlyCachedModel:
@@ -6,32 +16,33 @@ class ReadOnlyCachedModel:
     Read only cached model
     """
 
-    connection = None
-    ns = None
-    key_fields = None
+    connection: ClassVar[Redis]
+    ns: ClassVar[str]
+    key_fields: ClassVar[List[str]]
 
     @classmethod
-    def prefix_key(cls, data):
+    def prefix_key(cls, data: dict) -> str:
         key = cls.ns
-        for field in cls.key_fields:
-            key += f":{data[field]}"
+        for _field in cls.key_fields:
+            key += f":{data[_field]}"
         return key
 
     @classmethod
-    def get(cls, **data):
+    def get(cls, **data: Any) -> Optional[dict]:
         key = cls.prefix_key(data)
-        value = cls.connection.get(key)
+        value: Any = cls.connection.get(key)
         return json.loads(value) if value else None
 
     @classmethod
-    def exists(cls, **data):
+    def exists(cls, **data: Any) -> bool:
         key = cls.prefix_key(data)
-        return cls.connection.exists(key)
+        return cls.connection.exists(key)  # type: ignore
 
     @classmethod
-    def get_count(cls, **data):
-        key = cls.prefix_key(data)
-        return int(cls.connection.get(key) or 0)
+    def get_count(cls, **data: Any) -> int:
+        key: Any = cls.prefix_key(data)
+        count: Optional[Any] = cls.connection.get(key)
+        return int(count) if count else 0
 
 
 class ReadWriteCachedModel(ReadOnlyCachedModel):
@@ -39,31 +50,31 @@ class ReadWriteCachedModel(ReadOnlyCachedModel):
     Read/Write cached model
     """
 
-    timeout = None
+    timeout: ClassVar[Optional[int]] = None
 
     @classmethod
-    def _get_matched_keys(cls, data):
+    def _get_matched_keys(cls, data: dict) -> List[str]:
         pattern = cls.ns
-        for field in cls.key_fields:
-            pattern += f':{data.get(field, "*")}'
-        return cls.connection.keys(pattern)
+        for _field in cls.key_fields:
+            pattern += f':{data.get(_field, "*")}'
+        return cls.connection.keys(pattern)  # type: ignore
 
     @classmethod
-    def create(cls, **data):
+    def create(cls, **data: Any):
         key = cls.prefix_key(data)
         cls.connection.set(key, json.dumps(data))
         if cls.timeout:
             cls.connection.expire(key, cls.timeout)
 
     @classmethod
-    def create_lookup(cls, **data):
+    def create_lookup(cls, **data: Any):
         key = cls.prefix_key(data)
         cls.connection.set(key, 1)
         if cls.timeout:
             cls.connection.expire(key, cls.timeout)
 
     @classmethod
-    def create_counter(cls, starting=1, **data):
+    def create_counter(cls, starting=1, **data: Any):
         key = cls.prefix_key(data)
         cls.connection.set(key, starting)
         if cls.timeout:

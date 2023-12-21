@@ -3,6 +3,8 @@
 
 """The setup script."""
 
+# type: ignore
+
 from setuptools import find_packages, setup
 
 with open("README.rst") as readme_file:

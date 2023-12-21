@@ -68,7 +68,8 @@ Ready to contribute? Here's how to set up `apphelpers` for local development.
 
     $ mkvirtualenv apphelpers
     $ cd apphelpers/
-    $ python setup.py develop
+    $ pip install -e .
+    $ pip install -r requirements_dev.txt
 
 4. Create a branch for local development::
 
@@ -80,15 +81,17 @@ Ready to contribute? Here's how to set up `apphelpers` for local development.
    tests, including testing other Python versions with tox::
 
 
+   $ export SETTINGS_DIR=.
    $ gunicorn tests.service:__hug_wsgi__
-   $ nosetests -sxv tests
+   $ pytest tests
 
 6. When you're done making changes for fastapi, check that your changes pass flake8 and the
    tests, including testing other Python versions with tox::
 
 
+   $ export SETTINGS_DIR=.
    $ uvicorn fastapi_tests.service:app --host 0.0.0.0 --port 5000
-   $ pytest -x fastapi_tests
+   $ pytest fastapi_tests
 
 7. Commit your changes and push your branch to GitHub::
 
@@ -117,7 +120,7 @@ Tips
 To run a subset of tests::
 
 
-    $ python -m unittest tests.test_apphelpers
+    $ pytest ./tests/test_rest.py
 
 Deploying
 ---------

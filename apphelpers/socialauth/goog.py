@@ -4,7 +4,7 @@ from requests_oauthlib import OAuth2Session
 
 try:
     from converge import settings
-except:
+except ImportError:
     import settings
 
 if not settings.G_REDIRECT_URI.startswith("https"):

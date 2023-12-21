@@ -26,7 +26,7 @@ class URLField(Field):
 
     def python_value(self, value):
         value = value.lower()
-        if not value.startswith("http") or not "://" in value:
+        if not value.startswith("http") or "://" not in value:
             raise TypeError("Not a http URL: %s" % value)
         return value
 
@@ -58,13 +58,15 @@ def create_base_model(db):
     return BaseModel
 
 
-created = lambda: DateTimeTZField(default=lambda: datetime.datetime.now(pytz.utc))
+def created():
+    return DateTimeTZField(default=lambda: datetime.datetime.now(pytz.utc))
 
 
 def dbtransaction(db):
     """
     wrapper that make db transactions automic
-    note db connections are used only when it is needed (hence there is no usual connection open/close)
+    note db connections are used only when it is needed (hence there is no usual
+    connection open/close)
     """
 
     def wrapper(f):
@@ -88,8 +90,9 @@ def enumify(TheModel, name_field="name", val_field="id"):
     """
     Converts a model rows into an enum
     Can be effective cache for mostly unchanging data.
-    Limitation: No auto updates. If you update the model and you are using process manager like gunicorn you
-    would need to restart to rnsure enums are updated
+    Limitation: No auto updates. If you update the model and you are using
+    process manager like gunicorn you would need to restart to rnsure enums are
+    updated
 
     eg.
     >>> class Week(BaseModel):

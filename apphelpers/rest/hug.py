@@ -1,13 +1,20 @@
+# type: ignore
+
 from dataclasses import asdict, dataclass
 
 import hug
 from converge import settings
-from falcon import HTTPForbidden, HTTPNotFound, HTTPUnauthorized
+from falcon import (
+    HTTPForbidden,
+    HTTPNotFound,
+    HTTPUnauthorized,
+)
 from hug.decorators import wraps
 
 from apphelpers.db.peewee import dbtransaction
-from apphelpers.errors import BaseError, InvalidSessionError
+from apphelpers.errors.hug import BaseError, InvalidSessionError
 from apphelpers.loggers import api_logger
+from apphelpers.rest import endpoint as ep
 from apphelpers.sessions import SessionDBHandler
 
 if settings.get("HONEYBADGER_API_KEY"):
@@ -20,7 +27,7 @@ def phony(f):
 
 
 def raise_not_found_on_none(f):
-    if getattr(f, "not_found_on_none", None) == True:
+    if getattr(f, "not_found_on_none", None) is True:
 
         @wraps(f)
         def wrapper(*ar, **kw):
@@ -408,7 +415,8 @@ class APIFactory:
 
     def build(self, method, method_args, method_kw, f):
         print(
-            f"{method_args[0]} [{method.__name__.upper()}] => {f.__module__}:{f.__name__}"
+            f"{method_args[0]}",
+            f"[{method.__name__.upper()}] => {f.__module__}:{f.__name__}",
         )
         m = method(*method_args, **method_kw)
         f = self.access_wrapper(
@@ -487,3 +495,8 @@ class APIFactory:
             self.patch(resource_url)(update_resource)
         if delete_resource:
             self.delete(resource_url)(delete_resource)
+
+
+@ep.login_required
+def whoami(user: hug.directives.user):
+    return user.to_dict()

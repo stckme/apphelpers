@@ -1,6 +1,7 @@
 import hug
 import settings
 
+from apphelpers.rest import endpoint as ep
 from apphelpers.rest.hug import APIFactory
 
 
@@ -8,11 +9,9 @@ def echo(word):
     return {"word": word}
 
 
+@ep.login_required
 def protected_echo(word):
     return {"word": word}
-
-
-protected_echo.login_required = True
 
 
 def setup_routes(factory):
