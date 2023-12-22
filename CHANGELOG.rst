@@ -2,7 +2,7 @@
 History
 =======
 
-0.91.1 (2023-12-22)
+0.91.0 (2023-12-22)
 -------------------
 * Breaking: moved apphelpers.sessions.whoami to apphelpers.rest.{hug/fastapi}.whoami
 * New convenient decorators in apphelpers.rest.endpoint
