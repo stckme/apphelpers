@@ -102,6 +102,10 @@ async def get_raw_body(request: Request):
     return request.body()
 
 
+async def get_user_agent(request: Request):
+    return request.headers.get("USER-AGENT", "")
+
+
 user = Depends(get_current_user)
 user_id = Depends(get_current_user_id)
 user_name = Depends(get_current_user_name)
@@ -110,6 +114,7 @@ user_mobile = Depends(get_current_user_mobile)
 domain = Depends(get_current_domain)
 raw_body = Depends(get_raw_body)
 json_body = Depends(get_json_body)
+user_agent = Depends(get_user_agent)
 
 
 class SecureRouter(APIRoute):
@@ -123,13 +128,14 @@ class SecureRouter(APIRoute):
         original_route_handler = super().get_route_handler()
 
         async def custom_route_handler(_request: Request):
-            uid, groups, name, email, mobile, site_groups = (
+            uid, groups, name, email, mobile, site_groups, site_ctx = (
                 None,
                 [],
                 "",
                 None,
                 None,
                 {},
+                None,
             )
 
             token = _request.headers.get("Authorization")
@@ -143,15 +149,17 @@ class SecureRouter(APIRoute):
                         "email",
                         "mobile",
                         "site_groups",
+                        "site_ctx",
                     ],
                 )
-                uid, name, groups, email, mobile, site_groups = (
+                uid, name, groups, email, mobile, site_groups, site_ctx = (
                     session["uid"],
                     session["name"],
                     session["groups"],
                     session["email"],
                     session["mobile"],
                     session["site_groups"],
+                    session["site_ctx"],
                 )
 
             _request.state.user = User(
@@ -162,6 +170,7 @@ class SecureRouter(APIRoute):
                 email=email,
                 mobile=mobile,
                 site_groups=site_groups,
+                site_ctx=site_ctx,
             )
 
             return await original_route_handler(_request)
@@ -194,22 +203,39 @@ class Router(APIRoute):
         original_route_handler = super().get_route_handler()
 
         async def custom_route_handler(_request: Request):
-            uid, groups, name, email, mobile, site_groups = None, [], "", None, None, {}
+            uid, groups, name, email, mobile, site_groups, site_ctx = (
+                None,
+                [],
+                "",
+                None,
+                None,
+                {},
+                None,
+            )
 
             token = _request.headers.get("Authorization")
             if token:
                 try:
                     session = self.sessions.get(  # type: ignore
                         token,
-                        ["uid", "name", "groups", "email", "mobile", "site_groups"],
+                        [
+                            "uid",
+                            "name",
+                            "groups",
+                            "email",
+                            "mobile",
+                            "site_groups",
+                            "site_ctx",
+                        ],
                     )
-                    uid, name, groups, email, mobile, site_groups = (
+                    uid, name, groups, email, mobile, site_groups, site_ctx = (
                         session["uid"],
                         session["name"],
                         session["groups"],
                         session["email"],
                         session["mobile"],
                         session["site_groups"],
+                        session["site_ctx"],
                     )
                 except InvalidSessionError:
                     pass
@@ -222,6 +248,7 @@ class Router(APIRoute):
                 email=email,
                 mobile=mobile,
                 site_groups=site_groups,
+                site_ctx=site_ctx,
             )
             return await original_route_handler(_request)
 
@@ -371,15 +398,27 @@ class APIFactory:
                 @wraps(f)
                 async def wrapper(_request, *args, **kw):
                     user: User = _request.state.user
+                    site_id = (
+                        int(kw[self.site_identifier])
+                        if self.site_identifier in kw
+                        else None
+                    )
 
                     # this is authentication part
                     if not user.id:
                         raise HTTP401Unauthorized("Invalid or expired session")
 
+                    # bound site authorization
+                    if (
+                        user.site_ctx
+                        and site_id != user.site_ctx
+                        and getattr(f, "ignore_site_ctx", False) is False
+                    ):
+                        raise HTTP401Unauthorized("Invalid or expired session")
+
                     # this is authorization part
                     groups = set(user.groups)
-                    if self.site_identifier in kw:
-                        site_id = int(kw[self.site_identifier])
+                    if site_id:
                         groups = groups.union(user.site_groups.get(site_id, []))
 
                     if any_group_required and groups.isdisjoint(any_group_required):

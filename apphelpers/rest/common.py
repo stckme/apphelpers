@@ -25,6 +25,7 @@ class User:
     email: Optional[str] = None
     mobile: Optional[str] = None
     site_groups: Dict[int, int] = field(default_factory=dict)
+    site_ctx: Optional[int] = None
 
     def to_dict(self):
         return asdict(self)

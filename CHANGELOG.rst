@@ -2,6 +2,13 @@
 History
 =======
 
+0.92.0 (2023-12-23)
+-------------------
+* site_ctx implementation for FastAPI
+* user_agent directive for FastAPI & Hug
+* ignore_site_ctx implementation for FastAPI & Hug
+* count_matched_keys implementation for ReadOnlyCachedModel
+
 0.91.0 (2023-12-22)
 -------------------
 * Breaking: moved apphelpers.sessions.whoami to apphelpers.rest.{hug/fastapi}.whoami

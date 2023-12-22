@@ -245,3 +245,28 @@ def test_not_found_on_none_async():
 
     url = base_url + "snakes-async"
     assert requests.get(url).status_code == 404
+
+
+def test_user_agent_async_and_site_ctx():
+    url = base_url + "echo-user-agent-async"
+
+    headers = {"Authorization": sessionsdb.create(uid=1214)}
+    response = requests.get(url, headers=headers)
+    assert response.status_code == 200
+    assert "python-requests" in response.text
+
+    headers = {"Authorization": sessionsdb.create(uid=1215, site_ctx=4011)}
+    response = requests.get(url, headers=headers)
+    assert response.status_code == 401
+
+    url = base_url + "echo-user-agent-without-site-ctx-async"
+
+    headers = {"Authorization": sessionsdb.create(uid=1214)}
+    response = requests.get(url, headers=headers)
+    assert response.status_code == 200
+    assert "python-requests" in response.text
+
+    headers = {"Authorization": sessionsdb.create(uid=1215, site_ctx=4011)}
+    response = requests.get(url, headers=headers)
+    assert response.status_code == 200
+    assert "python-requests" in response.text

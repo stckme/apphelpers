@@ -44,6 +44,11 @@ class ReadOnlyCachedModel:
         count: Optional[Any] = cls.connection.get(key)
         return int(count) if count else 0
 
+    @classmethod
+    def count_matched_keys(cls, **data) -> int:
+        keys = cls._get_matched_keys(data)
+        return len(keys)
+
 
 class ReadWriteCachedModel(ReadOnlyCachedModel):
     """

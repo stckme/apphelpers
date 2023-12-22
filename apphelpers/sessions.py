@@ -66,7 +66,7 @@ class SessionDBHandler:
         if extras:
             session_dict.update(extras)
         session = {k: pickle.dumps(v) for k, v in session_dict.items()}
-        self.rconn.hmset(key, session)
+        self.rconn.hset(key, mapping=session)
 
         if uid:
             rev_key = rev_lookup_key(uid, site_ctx)
