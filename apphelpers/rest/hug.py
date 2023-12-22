@@ -123,6 +123,11 @@ def user_mobile(default=None, request=None, **kwargs):
     return request.context["user"].mobile
 
 
+@hug.directive()
+def user_agent(default=None, request=None, **kwargs):
+    return request.headers.get("USER-AGENT", "")
+
+
 @dataclass
 class User:
     sid: str = None
@@ -376,7 +381,11 @@ class APIFactory:
                         raise HTTPUnauthorized("Invalid or expired session")
 
                     # bound site authorization
-                    if user.site_ctx and site_id != user.site_ctx:
+                    if (
+                        user.site_ctx
+                        and site_id != user.site_ctx
+                        and getattr(f, "ignore_site_ctx", False) is False
+                    ):
                         raise HTTPUnauthorized("Invalid or expired session")
 
                     # this is authorization part

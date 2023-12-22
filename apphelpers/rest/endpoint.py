@@ -41,3 +41,8 @@ def authorizer(authorizer):
 def not_found_on_none(func):
     func.not_found_on_none = True
     return func
+
+
+def ignore_site_ctx(func):
+    func.ignore_site_ctx = True
+    return func

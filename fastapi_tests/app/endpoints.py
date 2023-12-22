@@ -1,9 +1,5 @@
 from apphelpers.rest import endpoint as ep
-from apphelpers.rest.fastapi import (
-    json_body,
-    user,
-    user_id,
-)
+from apphelpers.rest.fastapi import json_body, user, user_id, user_agent
 
 
 def echo(word, user=user):
@@ -68,6 +64,17 @@ async def echo_site_groups_async(site_id: int, user=user):
     return user.site_groups[site_id]
 
 
+@ep.login_required
+async def echo_user_agent_async(user_agent=user_agent):
+    return user_agent
+
+
+@ep.login_required
+@ep.ignore_site_ctx
+async def echo_user_agent_without_site_ctx_async(user_agent=user_agent):
+    return user_agent
+
+
 def setup_routes(factory):
     factory.get("/echo/{word}")(echo)
     factory.get("/echo-async/{word}")(echo_async)
@@ -86,3 +93,8 @@ def setup_routes(factory):
 
     factory.get("/sites/{site_id}/echo-groups")(echo_site_groups)
     factory.get("/sites/{site_id}/echo-groups-async")(echo_site_groups_async)
+
+    factory.get("/echo-user-agent-async")(echo_user_agent_async)
+    factory.get("/echo-user-agent-without-site-ctx-async")(
+        echo_user_agent_without_site_ctx_async
+    )
