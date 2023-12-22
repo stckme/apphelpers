@@ -445,7 +445,7 @@ class APIFactory:
 
         print(
             f"{method_args[0]}",
-            f"[{method.__name__.upper()}] => {module}:{name}",
+            f"[{method.__name__.upper()}] => {f.__module__}:{f.__name__}",
         )
         m = method(*method_args, **method_kw)
         f = self.access_wrapper(
