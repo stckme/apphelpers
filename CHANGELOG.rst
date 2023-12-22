@@ -2,6 +2,15 @@
 History
 =======
 
+0.91.1 (2023-12-22)
+-------------------
+* Breaking: moved apphelpers.sessions.whoami to apphelpers.rest.{hug/fastapi}.whoami
+* New convenient decorators in apphelpers.rest.endpoint
+* any_group_required and all_groups_required implementation for FastAPI
+* Improved errors
+* Other improvements and fixes
+* Moved CI from travis to github actions
+
 0.90.0 (2023-10-16)
 -------------------
 * Support for FastAPI framework.
