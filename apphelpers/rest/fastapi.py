@@ -467,6 +467,21 @@ class APIFactory:
         return self.secure_router if login_required else self.router
 
     def build(self, method, method_args, method_kw, f):
+        module = f.__module__.split(".")[-1].strip("_")
+        name = f.__name__.strip("_")
+        return_type = inspect.signature(f).return_annotation
+
+        if "operation_id" not in method_kw:
+            method_kw["operation_id"] = f"{ep}_{module}"
+        if "tags" not in method_kw:
+            method_kw["tags"] = [module]
+        if (
+            "response_model" not in method_kw
+            and "response_class" not in method_kw
+            and return_type is not inspect.Signature.empty
+        ):
+            method_kw["response_model"] = return_type
+
         print(
             f"{method_args[0]}",
             f"[{method.__name__.upper()}] => {f.__module__}:{f.__name__}",
