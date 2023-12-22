@@ -418,8 +418,7 @@ class APIFactory:
 
                     # this is authorization part
                     groups = set(user.groups)
-                    if self.site_identifier in kw:
-                        site_id = int(kw[self.site_identifier])
+                    if site_id:
                         groups = groups.union(user.site_groups.get(site_id, []))
 
                     if any_group_required and groups.isdisjoint(any_group_required):
