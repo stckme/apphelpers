@@ -2,6 +2,10 @@
 History
 =======
 
+0.92.1 (2023-12-24)
+-------------------
+* Fixed _get_matched_keys access for ReadOnlyCachedModel
+
 0.92.0 (2023-12-23)
 -------------------
 * site_ctx implementation for FastAPI
