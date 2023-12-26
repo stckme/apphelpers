@@ -2,6 +2,10 @@
 History
 =======
 
+0.92.2 (2023-12-26)
+-------------------
+* Fixed operation_id generation
+
 0.92.1 (2023-12-24)
 -------------------
 * Fixed _get_matched_keys access for ReadOnlyCachedModel

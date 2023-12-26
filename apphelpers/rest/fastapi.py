@@ -472,7 +472,7 @@ class APIFactory:
         return_type = inspect.signature(f).return_annotation
 
         if "operation_id" not in method_kw:
-            method_kw["operation_id"] = f"{ep}_{module}"
+            method_kw["operation_id"] = f"{name}_{module}"
         if "tags" not in method_kw:
             method_kw["tags"] = [module]
         if (
