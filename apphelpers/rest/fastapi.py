@@ -175,7 +175,9 @@ class SecureRouter(APIRoute):
 
             return await original_route_handler(_request)
 
-        original_route_handler.__signature__ = inspect.Signature(
+        original_route_handler.__signature__ = inspect.signature(
+            original_route_handler
+        ).replace(
             parameters=[
                 # Use all parameters from handler
                 *inspect.signature(original_route_handler).parameters.values(),
@@ -185,9 +187,6 @@ class SecureRouter(APIRoute):
                     annotation=Request,
                 ),
             ],
-            return_annotation=inspect.signature(
-                original_route_handler
-            ).return_annotation,
         )
         return custom_route_handler
 
@@ -252,7 +251,9 @@ class Router(APIRoute):
             )
             return await original_route_handler(_request)
 
-        original_route_handler.__signature__ = inspect.Signature(
+        original_route_handler.__signature__ = inspect.signature(
+            original_route_handler
+        ).replace(
             parameters=[
                 # Use all parameters from handler
                 *inspect.signature(original_route_handler).parameters.values(),
@@ -262,9 +263,6 @@ class Router(APIRoute):
                     annotation=Request,
                 ),
             ],
-            return_annotation=inspect.signature(
-                original_route_handler
-            ).return_annotation,
         )
         return custom_route_handler
 
@@ -359,7 +357,7 @@ class APIFactory:
                         else f(*args, **kw)
                     )
 
-                f.__signature__ = inspect.Signature(
+                f.__signature__ = inspect.signature(f).replace(
                     parameters=[
                         # Use all parameters from handler
                         *inspect.signature(f).parameters.values(),
@@ -369,7 +367,6 @@ class APIFactory:
                             annotation=Request,
                         ),
                     ],
-                    return_annotation=inspect.signature(f).return_annotation,
                 )
             else:
                 wrapper = f
@@ -441,7 +438,7 @@ class APIFactory:
                         else f(*args, **kw)
                     )
 
-                f.__signature__ = inspect.Signature(
+                f.__signature__ = inspect.signature(f).replace(
                     parameters=[
                         # Use all parameters from handler
                         *inspect.signature(f).parameters.values(),
@@ -451,7 +448,6 @@ class APIFactory:
                             annotation=Request,
                         ),
                     ],
-                    return_annotation=inspect.signature(f).return_annotation,
                 )
             else:
                 wrapper = f
@@ -469,18 +465,21 @@ class APIFactory:
     def build(self, method, method_args, method_kw, f):
         module = f.__module__.split(".")[-1].strip("_")
         name = f.__name__.strip("_")
-        return_type = inspect.signature(f).return_annotation
+        response_model = getattr(f, "response_model", None)
 
         if "operation_id" not in method_kw:
             method_kw["operation_id"] = f"{name}_{module}"
         if "tags" not in method_kw:
             method_kw["tags"] = [module]
+
+        if response_model is not None and "response_model" not in method_kw:
+            method_kw["response_model"] = response_model
+
         if (
-            "response_model" not in method_kw
-            and "response_class" not in method_kw
-            and return_type is not inspect.Signature.empty
+            "response_model" in method_kw
+            and "response_model_exclude_unset" not in method_kw
         ):
-            method_kw["response_model"] = return_type
+            method_kw["response_model_exclude_unset"] = True
 
         print(
             f"{method_args[0]}",
