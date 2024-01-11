@@ -24,15 +24,26 @@ if settings.get("HONEYBADGER_API_KEY"):
 
 def raise_not_found_on_none(f):
     if getattr(f, "not_found_on_none", None) is True:
+        if inspect.iscoroutinefunction(f):
 
-        @wraps(f)
-        def wrapper(*ar, **kw):
-            ret = f(*ar, **kw)
-            if ret is None:
-                raise HTTP404NotFound()
-            return ret
+            @wraps(f)
+            async def async_wrapper(*ar, **kw):
+                ret = await f(*ar, **kw)
+                if ret is None:
+                    raise HTTP404NotFound()
+                return ret
 
-        return wrapper
+            return async_wrapper
+        else:
+
+            @wraps(f)
+            def wrapper(*ar, **kw):
+                ret = f(*ar, **kw)
+                if ret is None:
+                    raise HTTP404NotFound()
+                return ret
+
+            return wrapper
     return f
 
 
