@@ -480,6 +480,8 @@ class APIFactory:
 
         if "operation_id" not in method_kw:
             method_kw["operation_id"] = f"{name}_{module}"
+        if "name" not in method_kw:
+            method_kw["name"] = method_kw["operation_id"]
         if "tags" not in method_kw:
             method_kw["tags"] = [module]
 
