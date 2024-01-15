@@ -156,11 +156,19 @@ def test_not_found():
 
     headers = {"Authorization": sid}
 
-    url = urls.base + "snakes/viper"
+    url = urls.base + "snakes/"
     assert requests.get(url).status_code == 404
 
-    url = urls.base + "sites/1/snakes/viper"
+    url = urls.base + "snakes/viper"
+    resp = requests.get(url)
+    assert resp.status_code == 200
+    assert resp.json() == "viper"
+
+    url = urls.base + "sites/1/snakes/"
     assert requests.get(url, headers=headers).status_code == 404
+
+    url = urls.base + "sites/1/snakes/viper"
+    assert requests.get(url, headers=headers).status_code == 200
 
 
 def test_site_group_access():

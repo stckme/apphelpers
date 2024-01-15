@@ -167,6 +167,20 @@ def test_not_found_on_none():
     assert requests.get(url).status_code == 404
 
 
+def test_get_fields():
+    url = base_url + "fields"
+    assert requests.get(url).json() == {}
+
+    url = base_url + "fields?fields=foo"
+    assert requests.get(url).json() == {"foo": 1}
+
+    url = base_url + "fields?fields=bar"
+    assert requests.get(url).json() == {"bar": None}
+
+    url = base_url + "fields?fields=foo&fields=bar"
+    assert requests.get(url).json() == {"foo": 1, "bar": None}
+
+
 def test_site_group_access():
     url = echo_site_groups_url
 

@@ -1,5 +1,8 @@
+from typing import Dict, Optional
+
 import hug
 import hug.directives
+from pydantic import BaseModel
 
 from apphelpers.rest import endpoint as ep
 from apphelpers.rest.hug import user_id
@@ -31,14 +34,14 @@ def get_my_uid(uid: user_id):
 
 
 @ep.not_found_on_none
-def get_snake(name):
-    return None
+def get_snake(name=None):
+    return name
 
 
 @ep.login_required
 @ep.not_found_on_none
-def get_secure_snake(site_id, name):
-    return None
+def get_secure_snake(site_id, name=None):
+    return name
 
 
 @ep.login_required

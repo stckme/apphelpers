@@ -1,5 +1,10 @@
+from typing import Optional
+
+from fastapi import Query
+from pydantic import BaseModel
+
 from apphelpers.rest import endpoint as ep
-from apphelpers.rest.fastapi import json_body, user, user_id, user_agent
+from apphelpers.rest.fastapi import json_body, user, user_agent, user_id
 
 
 def echo(word, user=user):
@@ -41,12 +46,14 @@ def get_my_uid(body=json_body):
 
 
 @ep.login_required
+@ep.response_model(str)
 @ep.not_found_on_none
 def get_snake(name=None):
     return name
 
 
 @ep.login_required
+@ep.response_model(str)
 @ep.not_found_on_none
 async def get_snake_async(name=None):
     return name
@@ -75,6 +82,17 @@ async def echo_user_agent_without_site_ctx_async(user_agent=user_agent):
     return user_agent
 
 
+class Fields(BaseModel):
+    foo: Optional[int] = None
+    bar: Optional[int] = None
+
+
+@ep.response_model(Fields)
+async def get_fields(fields: set = Query(..., default_factory=set)):
+    data = {"foo": 1, "bar": None}
+    return {k: v for k, v in data.items() if k in fields}
+
+
 def setup_routes(factory):
     factory.get("/echo/{word}")(echo)
     factory.get("/echo-async/{word}")(echo_async)
@@ -98,3 +116,4 @@ def setup_routes(factory):
     factory.get("/echo-user-agent-without-site-ctx-async")(
         echo_user_agent_without_site_ctx_async
     )
+    factory.get("/fields")(get_fields)
