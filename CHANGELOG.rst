@@ -2,6 +2,10 @@
 History
 =======
 
+0.92.3 (2023-01-15)
+-------------------
+* Aded @response_model for FastAPI endpoints
+
 0.92.2 (2023-12-26)
 -------------------
 * Fixed operation_id generation
