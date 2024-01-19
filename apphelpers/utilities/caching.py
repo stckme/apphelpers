@@ -30,7 +30,7 @@ class ReadOnlyCachedModel:
 
     @classmethod
     def _secondary_key_prefix(cls, data: dict) -> str:
-        key = f"_sk_:{cls.ns}"
+        key = f"{cls.ns}:_sk_"
         for _field in cls.secondary_key_fields:
             key += f":{data.get(_field, '*')}"
         return key
@@ -143,7 +143,8 @@ class ReadWriteCachedModel(ReadOnlyCachedModel):
         if keys:
             cls.connection.delete(*keys)
 
-        if cls.secondary_key_fields:
-            secondary_keys = cls.connection.keys(cls._secondary_key_prefix(data))
-            if secondary_keys:
-                cls.connection.delete(*secondary_keys)
+    @classmethod
+    def delete_all_secondary_keys(cls):
+        secondary_keys = cls.connection.keys(cls._secondary_key_prefix(data={}))
+        if secondary_keys:
+            cls.connection.delete(*secondary_keys)
