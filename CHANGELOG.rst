@@ -2,9 +2,13 @@
 History
 =======
 
+0.93.0 (2023-01-19)
+-------------------
+* Added secondary_key support for CachedModel
+
 0.92.3 (2023-01-15)
 -------------------
-* Aded @response_model for FastAPI endpoints
+* Added @response_model for FastAPI endpoints
 
 0.92.2 (2023-12-26)
 -------------------

@@ -19,12 +19,20 @@ class ReadOnlyCachedModel:
     connection: ClassVar[Redis]
     ns: ClassVar[str]
     key_fields: ClassVar[List[str]]
+    secondary_key_fields: ClassVar[List[str]]
 
     @classmethod
     def _prefix_key(cls, data: dict) -> str:
         key = cls.ns
         for _field in cls.key_fields:
             key += f":{data[_field]}"
+        return key
+
+    @classmethod
+    def _secondary_key_prefix(cls, data: dict) -> str:
+        key = f"{cls.ns}:_sk_"
+        for _field in cls.secondary_key_fields:
+            key += f":{data.get(_field, '*')}"
         return key
 
     @classmethod
@@ -39,6 +47,14 @@ class ReadOnlyCachedModel:
         key = cls._prefix_key(data)
         value: Any = cls.connection.get(key)
         return json.loads(value) if value else None
+
+    @classmethod
+    def get_by_secondary_key(cls, **data: Any) -> Optional[dict]:
+        secondary_key = cls._secondary_key_prefix(**data)
+        primary_key = cls.connection.get(secondary_key)
+        if primary_key:
+            value = cls.connection.get(primary_key)
+            return json.loads(value) if value else None
 
     @classmethod
     def exists(cls, **data: Any) -> bool:
@@ -65,25 +81,34 @@ class ReadWriteCachedModel(ReadOnlyCachedModel):
     timeout: ClassVar[Optional[int]] = None
 
     @classmethod
-    def create(cls, **data: Any):
+    def create(cls, **data: Any) -> str:
         key = cls._prefix_key(data)
         cls.connection.set(key, json.dumps(data))
         if cls.timeout:
             cls.connection.expire(key, cls.timeout)
+        return key
 
     @classmethod
-    def create_lookup(cls, **data: Any):
+    def add_secondary_key(cls, primary_key: str, **data: Any) -> str:
+        secondary_key = cls._secondary_key_prefix(data)
+        cls.connection.set(secondary_key, primary_key)
+        return secondary_key
+
+    @classmethod
+    def create_lookup(cls, **data: Any) -> str:
         key = cls._prefix_key(data)
         cls.connection.set(key, 1)
         if cls.timeout:
             cls.connection.expire(key, cls.timeout)
+        return key
 
     @classmethod
-    def create_counter(cls, starting=1, **data: Any):
+    def create_counter(cls, starting=1, **data: Any) -> str:
         key = cls._prefix_key(data)
         cls.connection.set(key, starting)
         if cls.timeout:
             cls.connection.expire(key, cls.timeout)
+        return key
 
     @classmethod
     def update(cls, **data):
@@ -108,7 +133,18 @@ class ReadWriteCachedModel(ReadOnlyCachedModel):
         cls.connection.delete(key)
 
     @classmethod
+    def delete_secondary_key(cls, **data: Any):
+        secondary_key = cls._secondary_key_prefix(data)
+        cls.connection.delete(secondary_key)
+
+    @classmethod
     def delete_all(cls, **data):
         keys = cls._get_matched_keys(data)
         if keys:
             cls.connection.delete(*keys)
+
+    @classmethod
+    def delete_all_secondary_keys(cls):
+        secondary_keys = cls.connection.keys(cls._secondary_key_prefix(data={}))
+        if secondary_keys:
+            cls.connection.delete(*secondary_keys)

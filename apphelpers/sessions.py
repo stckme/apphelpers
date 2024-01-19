@@ -129,7 +129,7 @@ class SessionDBHandler:
     def update(self, sid, keyvalues):
         sk = session_key(sid)
         keyvalues = {k: pickle.dumps(v) for k, v in list(keyvalues.items())}
-        self.rconn.hmset(sk, keyvalues)
+        self.rconn.hset(sk, mapping=keyvalues)
 
     def update_for(self, uid, keyvalues):
         sid = self.uid2sid(uid)
