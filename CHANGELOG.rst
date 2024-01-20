@@ -2,6 +2,10 @@
 History
 =======
 
+0.93.1 (2023-01-20)
+-------------------
+* Fixed get_by_secondary_key of CachedModel
+
 0.93.0 (2023-01-19)
 -------------------
 * Added secondary_key support for CachedModel
