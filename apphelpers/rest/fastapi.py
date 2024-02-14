@@ -295,7 +295,7 @@ class APIFactory:
         self.multi_site_enabled = True
         self.site_identifier = site_identifier
 
-    def setup_db_transaction(self, db):
+    def setup_db_transaction(self, db=None):
         self.router.dependencies.append(Depends(dbtransaction_ctx(db)))
 
     def setup_honeybadger_monitoring(self):
