@@ -7,7 +7,7 @@ from converge import settings
 from falcon import HTTPForbidden, HTTPNotFound, HTTPUnauthorized
 from hug.decorators import wraps
 
-from apphelpers.db.peewee import dbtransaction
+from apphelpers.db import dbtransaction
 from apphelpers.errors.hug import BaseError, InvalidSessionError
 from apphelpers.loggers import api_logger
 from apphelpers.rest import endpoint as ep

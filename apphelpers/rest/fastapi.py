@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 from fastapi.routing import APIRoute
 from starlette.requests import Request
 
-from apphelpers.db.peewee import dbtransaction
+from apphelpers.db import dbtransaction_ctx
 from apphelpers.errors.fastapi import (
     HTTP401Unauthorized,
     HTTP403Forbidden,
@@ -280,7 +280,6 @@ class Router(APIRoute):
 
 class APIFactory:
     def __init__(self, sessiondb_conn=None, urls_prefix="", site_identifier=None):
-        self.db_tr_wrapper = phony
         self.access_wrapper = phony
         self.multi_site_enabled = False
         self.site_identifier = site_identifier
@@ -297,7 +296,7 @@ class APIFactory:
         self.site_identifier = site_identifier
 
     def setup_db_transaction(self, db):
-        self.db_tr_wrapper = dbtransaction(db)
+        self.router.dependencies.append(Depends(dbtransaction_ctx(db)))
 
     def setup_honeybadger_monitoring(self):
         api_key = settings.HONEYBADGER_API_KEY
@@ -499,9 +498,7 @@ class APIFactory:
             f"[{method.__name__.upper()}] => {f.__module__}:{f.__name__}",
         )
         m = method(*method_args, **method_kw)
-        f = self.access_wrapper(
-            self.honeybadger_wrapper(self.db_tr_wrapper(raise_not_found_on_none(f)))
-        )
+        f = self.access_wrapper(self.honeybadger_wrapper(raise_not_found_on_none(f)))
         # NOTE: ^ wrapper ordering is important. access_wrapper needs request which
         # others don't. If access_wrapper comes late in the order it won't be passed
         # request parameter.
