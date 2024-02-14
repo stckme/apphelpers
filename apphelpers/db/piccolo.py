@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from functools import wraps
 from typing import List, Optional, Set, Type, cast
 
 from piccolo.engine import engine_finder
@@ -21,6 +22,18 @@ async def dbtransaction_ctx(engine: Optional[PostgresEngine] = None, allow_neste
     if engine := engine or cast(PostgresEngine, engine_finder()):
         async with engine.transaction(allow_nested=allow_nested):
             yield
+
+
+def dbtransaction(engine: Optional[PostgresEngine] = None, allow_nested=True):
+    def wrapper(f):
+        @wraps(f)
+        async def f_wrapped(*args, **kw):
+            async with dbtransaction_ctx(engine, allow_nested=allow_nested):
+                return await f(*args, **kw)
+
+        return f_wrapped
+
+    return wrapper
 
 
 class BaseTable(Table):
