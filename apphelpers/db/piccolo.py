@@ -1,30 +1,24 @@
 from contextlib import asynccontextmanager
 from functools import wraps
-from typing import List, Optional, Set, Type, cast
+from typing import List, Set, Type
 
-from piccolo.engine import engine_finder
 from piccolo.engine.postgres import PostgresEngine
 from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
 
 
 @asynccontextmanager
-async def connection_pool_lifespan(engine: Optional[PostgresEngine] = None, **kwargs):
-    if engine := engine or cast(PostgresEngine, engine_finder()):
-        print("db: starting connection pool")
-        await engine.start_connection_pool(**kwargs)
-        yield
-        print("db: closing connection pool")
-        await engine.close_connection_pool()
+async def connection_pool_lifespan(engine: PostgresEngine, **kwargs):
+    print("db: starting connection pool")
+    await engine.start_connection_pool(**kwargs)
+    yield
+    print("db: closing connection pool")
+    await engine.close_connection_pool()
 
 
-@asynccontextmanager
-async def dbtransaction_ctx(engine: Optional[PostgresEngine] = None, allow_nested=True):
-    if engine := engine or cast(PostgresEngine, engine_finder()):
-        async with engine.transaction(allow_nested=allow_nested):
-            yield
+dbtransaction_ctx = PostgresEngine.transaction
 
 
-def dbtransaction(engine: Optional[PostgresEngine] = None, allow_nested=True):
+def dbtransaction(engine: PostgresEngine, allow_nested=True):
     def wrapper(f):
         @wraps(f)
         async def f_wrapped(*args, **kw):
