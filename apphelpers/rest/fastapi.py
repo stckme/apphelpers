@@ -128,6 +128,14 @@ json_body = Depends(get_json_body)
 user_agent = Depends(get_user_agent)
 
 
+def dbtransaction(engine, allow_nested=True):
+    async def dependency():
+        async with dbtransaction_ctx(engine, allow_nested=allow_nested):
+            yield
+
+    return Depends(dependency)
+
+
 class SecureRouter(APIRoute):
     sessions = None
 
@@ -295,8 +303,8 @@ class APIFactory:
         self.multi_site_enabled = True
         self.site_identifier = site_identifier
 
-    def setup_db_transaction(self, db=None):
-        self.router.dependencies.append(Depends(dbtransaction_ctx(db)))
+    def setup_db_transaction(self, db):
+        self.router.dependencies.append(dbtransaction(db))
 
     def setup_honeybadger_monitoring(self):
         api_key = settings.HONEYBADGER_API_KEY

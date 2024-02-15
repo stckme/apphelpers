@@ -15,7 +15,10 @@ async def connection_pool_lifespan(engine: PostgresEngine, **kwargs):
     await engine.close_connection_pool()
 
 
-dbtransaction_ctx = PostgresEngine.transaction
+@asynccontextmanager
+async def dbtransaction_ctx(engine: PostgresEngine, allow_nested=True):
+    async with engine.transaction(allow_nested=allow_nested):
+        yield
 
 
 def dbtransaction(engine: PostgresEngine, allow_nested=True):
