@@ -2,6 +2,10 @@
 History
 =======
 
+0.94.0 (2024-03-06)
+-------------------
+* Added support for Piccolo ORM
+
 0.93.1 (2023-01-20)
 -------------------
 * Fixed get_by_secondary_key of CachedModel
