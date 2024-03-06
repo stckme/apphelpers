@@ -2,6 +2,8 @@ import requests
 from converge import settings
 
 import apphelpers.sessions as sessionslib
+from apphelpers.db.piccolo import setup_db_from_basetable, destroy_db_from_basetable
+from fastapi_tests.app.models import BaseTable
 
 base_url = "http://127.0.0.1:5000/"
 echo_url = base_url + "echo"
@@ -24,6 +26,13 @@ sessionsdb = sessionslib.SessionDBHandler(sessiondb_conn)
 
 def setup_module():
     sessionsdb.destroy_all()
+    destroy_db_from_basetable(BaseTable)
+    setup_db_from_basetable(BaseTable)
+
+
+def teardown_module():
+    sessionsdb.destroy_all()
+    destroy_db_from_basetable(BaseTable)
 
 
 def test_get():
@@ -284,3 +293,22 @@ def test_user_agent_async_and_site_ctx():
     response = requests.get(url, headers=headers)
     assert response.status_code == 200
     assert "python-requests" in response.text
+
+
+def test_piccolo():
+    url = base_url + "count-books"
+    assert requests.get(url).json() == 0
+
+    url = base_url + "add-books"
+    data = {"succeed": True}
+    assert requests.post(url, params=data).status_code == 200
+
+    url = base_url + "count-books"
+    assert requests.get(url).json() == 3
+
+    url = base_url + "add-books"
+    data = {"succeed": False}
+    assert requests.post(url, params=data).status_code == 500
+
+    url = base_url + "count-books"
+    assert requests.get(url).json() == 3
