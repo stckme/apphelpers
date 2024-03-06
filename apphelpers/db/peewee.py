@@ -1,6 +1,7 @@
 import datetime
 import logging
 import os
+from contextlib import contextmanager
 from enum import Enum
 
 import pytz
@@ -62,6 +63,17 @@ def created():
     return DateTimeTZField(default=lambda: datetime.datetime.now(pytz.utc))
 
 
+@contextmanager
+def dbtransaction_ctx(db):
+    if not db.in_transaction():
+        with db.connection_context():
+            with db.atomic():
+                yield
+    else:
+        with db.atomic():
+            yield
+
+
 def dbtransaction(db):
     """
     wrapper that make db transactions automic
@@ -72,14 +84,8 @@ def dbtransaction(db):
     def wrapper(f):
         @wraps(f)
         def f_wrapped(*args, **kw):
-            if not db.in_transaction():
-                with db.connection_context():
-                    with db.atomic():
-                        result = f(*args, **kw)
-            else:
-                with db.atomic():
-                    result = f(*args, **kw)
-            return result
+            with dbtransaction_ctx(db):
+                return f(*args, **kw)
 
         return f_wrapped
 

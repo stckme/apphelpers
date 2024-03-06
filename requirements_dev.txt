@@ -29,3 +29,4 @@ types-pytz
 types-redis
 redis
 loguru
+piccolo[postgres]

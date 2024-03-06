@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from apphelpers.rest import endpoint as ep
 from apphelpers.rest.fastapi import json_body, user, user_agent, user_id
+from fastapi_tests.app.models import Book
 
 
 def echo(word, user=user):
@@ -93,6 +94,18 @@ async def get_fields(fields: set = Query(..., default_factory=set)):
     return {k: v for k, v in data.items() if k in fields}
 
 
+async def add_books(succeed: bool):
+    await Book.insert(Book(name="The Pillars of the Earth")).run()
+    await Book.insert(Book(name="The Cathedral and the Bazaar")).run()
+    if not succeed:
+        raise ValueError("Failure")
+    await Book.insert(Book(name="The Ego Trick")).run()
+
+
+async def count_books():
+    return await Book.count()
+
+
 def setup_routes(factory):
     factory.get("/echo/{word}")(echo)
     factory.get("/echo-async/{word}")(echo_async)
@@ -117,3 +130,5 @@ def setup_routes(factory):
         echo_user_agent_without_site_ctx_async
     )
     factory.get("/fields")(get_fields)
+    factory.get("/count-books")(count_books)
+    factory.post("/add-books")(add_books)

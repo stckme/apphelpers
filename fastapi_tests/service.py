@@ -9,6 +9,7 @@ import settings
 
 from apphelpers.rest.fastapi import APIFactory
 from fastapi_tests.app.endpoints import setup_routes
+from fastapi_tests.app.models import db
 
 
 def make_app():
@@ -20,6 +21,7 @@ def make_app():
     )
 
     api_factory = APIFactory(sessiondb_conn=sessiondb_conn, site_identifier="site_id")
+    api_factory.setup_db_transaction(db)
     setup_routes(api_factory)
 
     app = fastapi.FastAPI()
