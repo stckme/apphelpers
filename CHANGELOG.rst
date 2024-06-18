@@ -2,6 +2,10 @@
 History
 =======
 
+0.95.0 (2024-06-18)
+-------------------
+* Won't rotate logs by default. Pass `rotate=True`.
+
 0.94.0 (2024-03-06)
 -------------------
 * Added support for Piccolo ORM
