@@ -4,4 +4,4 @@
 
 __author__ = """Scroll Tech"""
 __email__ = "engg@stck.me"
-__version__ = "1.0.0"
+__version__ = "0.94.0"
