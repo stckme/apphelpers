@@ -2,6 +2,10 @@
 History
 =======
 
+0.95.1 (2024-07-02)
+-------------------
+* Added socialauth.goog.fetch_info_using_jwt for fetching user info using Google JWT
+
 0.95.0 (2024-06-18)
 -------------------
 * Won't rotate logs by default. Pass `rotate=True`.
