@@ -1,10 +1,14 @@
 import os
 import time
+from unittest import mock
 
+import pytest
 import requests
 from converge import settings
 
 import apphelpers.sessions as sessionslib
+from apphelpers.errors.hug import BaseError
+from apphelpers.rest.hug import honeybadger_wrapper
 
 from .app.models import globalgroups, sitegroups
 
@@ -311,3 +315,52 @@ def test_custom_authorization_access():
 
     url = urls.echo_for_custom_authorization + "/unauthorized"
     assert requests.get(url, headers=headers).status_code == 403
+
+
+def test_honeybadger_wrapper():
+
+    mocked_honeybadger = mock.MagicMock()
+    wrapper = honeybadger_wrapper(mocked_honeybadger)
+
+    def good_endpoint(foo):
+        return foo
+
+    class IgnorableError(BaseError):
+        report = False
+
+    def bad_endpoint(foo):
+        raise IgnorableError()
+
+    def worse_endpoint(foo, password):
+        raise BaseError()
+
+    def worst_endpoint(foo):
+        raise RuntimeError()
+
+    wrapped_good_endpoint = wrapper(good_endpoint)
+    wrapped_bad_endpoint = wrapper(bad_endpoint)
+    wrapped_worse_endpoint = wrapper(worse_endpoint)
+    wrapped_worst_endpoint = wrapper(worst_endpoint)
+
+    assert wrapped_good_endpoint(1) == 1
+    assert not mocked_honeybadger.notify.called
+
+    with pytest.raises(IgnorableError):
+        wrapped_bad_endpoint(1)
+    assert not mocked_honeybadger.notify.called
+
+    with pytest.raises(BaseError) as e:
+        wrapped_worse_endpoint(1, password="secret")
+    mocked_honeybadger.notify.assert_called_once_with(
+        e.value,
+        context={
+            "func": "worse_endpoint",
+            "args": (1,),
+            "kwargs": {"password": "[FILTERED]"},
+        },
+    )
+    assert mocked_honeybadger.notify.call_count == 1
+
+    with pytest.raises(RuntimeError):
+        wrapped_worst_endpoint(1)
+    assert mocked_honeybadger.notify.call_count == 2

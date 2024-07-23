@@ -11,11 +11,11 @@ from apphelpers.db import dbtransaction
 from apphelpers.errors.hug import BaseError, InvalidSessionError
 from apphelpers.loggers import api_logger
 from apphelpers.rest import endpoint as ep
+from apphelpers.rest.common import notify_honeybadger
 from apphelpers.sessions import SessionDBHandler
 
 if settings.get("HONEYBADGER_API_KEY"):
     from honeybadger import Honeybadger
-    from honeybadger.utils import filter_dict
 
 
 def phony(f):
@@ -34,20 +34,6 @@ def raise_not_found_on_none(f):
 
         return wrapper
     return f
-
-
-def notify_honeybadger(honeybadger, error, func, args, kwargs):
-    try:
-        honeybadger.notify(
-            error,
-            context={
-                "func": func.__name__,
-                "args": args,
-                "kwargs": filter_dict(kwargs, settings.HB_PARAM_FILTERS),
-            },
-        )
-    finally:
-        pass
 
 
 def honeybadger_wrapper(hb):
