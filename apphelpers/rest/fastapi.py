@@ -8,18 +8,18 @@ from starlette.requests import Request
 
 from apphelpers.db import dbtransaction_ctx
 from apphelpers.errors.fastapi import (
+    BaseError,
     HTTP401Unauthorized,
     HTTP403Forbidden,
     HTTP404NotFound,
     InvalidSessionError,
 )
 from apphelpers.rest import endpoint as ep
-from apphelpers.rest.common import User, phony
+from apphelpers.rest.common import User, notify_honeybadger, phony
 from apphelpers.sessions import SessionDBHandler
 
 if settings.get("HONEYBADGER_API_KEY"):
     from honeybadger import Honeybadger
-    from honeybadger.utils import filter_dict
 
 
 def raise_not_found_on_none(f):
@@ -54,25 +54,58 @@ def honeybadger_wrapper(hb):
     """
 
     def wrapper(f):
-        @wraps(f)
-        def f_wrapped(*args, **kw):
-            try:
-                ret = f(*args, **kw)
-            except Exception as e:
-                try:
-                    hb.notify(
-                        e,
-                        context={
-                            "func": f.__name__,
-                            "args": args,
-                            "kwargs": filter_dict(kw, settings.HB_PARAM_FILTERS),
-                        },
-                    )
-                finally:
-                    raise e
-            return ret
+        if inspect.iscoroutinefunction(f):
 
-        return f_wrapped
+            @wraps(f)
+            async def async_f_wrapped(*args, **kw):
+                err_to_report = None
+                try:
+                    return await f(*args, **kw)
+                except BaseError as e:
+                    if e.report:
+                        err_to_report = e
+                    raise e
+                except Exception as e:
+                    err_to_report = e
+                    raise e
+                finally:
+                    if err_to_report:
+                        notify_honeybadger(
+                            honeybadger=hb,
+                            error=err_to_report,
+                            func=f,
+                            args=args,
+                            kwargs=kw,
+                        )
+
+            return async_f_wrapped
+
+        else:
+
+            @wraps(f)
+            def f_wrapped(*args, **kw):
+                err_to_report = None
+                try:
+                    return f(*args, **kw)
+                except BaseError as e:
+                    if e.report:
+                        err_to_report = e
+                    raise e
+                except Exception as e:
+                    err_to_report = e
+                    raise e
+
+                finally:
+                    if err_to_report:
+                        notify_honeybadger(
+                            honeybadger=hb,
+                            error=err_to_report,
+                            func=f,
+                            args=args,
+                            kwargs=kw,
+                        )
+
+            return f_wrapped
 
     return wrapper
 

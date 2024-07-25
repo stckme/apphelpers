@@ -15,6 +15,9 @@ SMTP_PORT = 10000
 SMTP_USERNAME = None
 SMTP_KEY = ""
 
+HONEYBADGER_API_KEY = "secret"
+HB_PARAM_FILTERS = ["password", "passwd", "secret"]
+
 
 class API_LOGGER:
     ENABLED = False

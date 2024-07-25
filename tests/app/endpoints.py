@@ -1,8 +1,5 @@
-from typing import Dict, Optional
-
 import hug
 import hug.directives
-from pydantic import BaseModel
 
 from apphelpers.rest import endpoint as ep
 from apphelpers.rest.hug import user_id

@@ -82,6 +82,7 @@ Ready to contribute? Here's how to set up `apphelpers` for local development.
 
 
    $ export SETTINGS_DIR=.
+   $ docker-compose up -d  # start postgres and redis
    $ gunicorn tests.service:__hug_wsgi__
    $ pytest tests
 
@@ -90,6 +91,7 @@ Ready to contribute? Here's how to set up `apphelpers` for local development.
 
 
    $ export SETTINGS_DIR=.
+   $ docker-compose up -d  # start postgres and redis
    $ uvicorn fastapi_tests.service:app --host 0.0.0.0 --port 5000
    $ pytest fastapi_tests
 

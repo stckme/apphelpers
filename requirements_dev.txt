@@ -30,3 +30,4 @@ types-redis
 redis
 loguru
 piccolo[postgres]
+honeybadger

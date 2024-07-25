@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import (
-    asdict,
-    dataclass,
-    field,
-)
-from typing import (
-    Dict,
-    List,
-    Optional,
-)
+from dataclasses import asdict, dataclass, field
+from typing import Dict, List, Optional
+
+from converge import settings
+from requests.exceptions import HTTPError
+
+if settings.get("HONEYBADGER_API_KEY"):
+    from honeybadger.utils import filter_dict
 
 
 def phony(f):
@@ -32,3 +30,21 @@ class User:
 
     def __bool__(self):
         return self.id is not None
+
+
+def notify_honeybadger(honeybadger, error, func, args, kwargs):
+    try:
+        honeybadger.notify(
+            error,
+            context={
+                "func": func.__name__,
+                "args": args,
+                "kwargs": filter_dict(kwargs, settings.HB_PARAM_FILTERS),
+            },
+        )
+    except HTTPError as e:
+        if e.response.status_code == 403:
+            # Ignore 403 Forbidden errors. We get alerted by HB anyway.
+            pass
+        else:
+            raise e

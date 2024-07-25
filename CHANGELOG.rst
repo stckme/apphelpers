@@ -2,6 +2,12 @@
 History
 =======
 
+0.96.0 (2024-07-25)
+-------------------
+* Possible fix for Honeybadger exception masking the actual exceptions.
+* Honeybadger 403 errors will not be raised anymore.
+* Improved FastAPI honeybadger integration.
+
 0.95.1 (2024-07-02)
 -------------------
 * Added socialauth.goog.fetch_info_using_jwt for fetching user info using Google JWT

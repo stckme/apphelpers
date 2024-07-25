@@ -1,8 +1,15 @@
+import asyncio
+from unittest import mock
+
+import pytest
 import requests
 from converge import settings
+from requests.exceptions import HTTPError
 
 import apphelpers.sessions as sessionslib
-from apphelpers.db.piccolo import setup_db_from_basetable, destroy_db_from_basetable
+from apphelpers.db.piccolo import destroy_db_from_basetable, setup_db_from_basetable
+from apphelpers.errors.fastapi import BaseError
+from apphelpers.rest.fastapi import honeybadger_wrapper
 from fastapi_tests.app.models import BaseTable
 
 base_url = "http://127.0.0.1:5000/"
@@ -312,3 +319,68 @@ def test_piccolo():
 
     url = base_url + "count-books"
     assert requests.get(url).json() == 3
+
+
+def test_honeybadger_wrapper():
+
+    mocked_honeybadger = mock.MagicMock()
+    wrapper = honeybadger_wrapper(mocked_honeybadger)
+
+    def good_endpoint(foo):
+        return foo
+
+    class IgnorableError(BaseError):
+        report = False
+
+    async def bad_endpoint(foo):
+        raise IgnorableError()
+
+    async def worse_endpoint(foo, password):
+        raise BaseError()
+
+    async def worst_endpoint(foo):
+        raise RuntimeError()
+
+    wrapped_good_endpoint = wrapper(good_endpoint)
+    wrapped_bad_endpoint = wrapper(bad_endpoint)
+    wrapped_worse_endpoint = wrapper(worse_endpoint)
+    wrapped_worst_endpoint = wrapper(worst_endpoint)
+
+    assert wrapped_good_endpoint(1) == 1
+    assert not mocked_honeybadger.notify.called
+
+    with pytest.raises(IgnorableError):
+        asyncio.run(wrapped_bad_endpoint(1))
+    assert not mocked_honeybadger.notify.called
+
+    with pytest.raises(BaseError) as e:
+        asyncio.run(wrapped_worse_endpoint(1, password="secret"))
+    mocked_honeybadger.notify.assert_called_once_with(
+        e.value,
+        context={
+            "func": "worse_endpoint",
+            "args": (1,),
+            "kwargs": {"password": "[FILTERED]"},
+        },
+    )
+    assert mocked_honeybadger.notify.call_count == 1
+
+    with pytest.raises(RuntimeError):
+        asyncio.run(wrapped_worst_endpoint(1))
+    assert mocked_honeybadger.notify.call_count == 2
+
+    mocked_honeybadger.notify.side_effect = HTTPError(
+        response=mock.MagicMock(status_code=403)
+    )
+    with pytest.raises(RuntimeError):
+        asyncio.run(wrapped_worst_endpoint(1))
+    # TODO: How to check nested exception?
+    assert mocked_honeybadger.notify.call_count == 3
+
+    mocked_honeybadger.notify.side_effect = HTTPError(
+        response=mock.MagicMock(status_code=401)
+    )
+    with pytest.raises(HTTPError):
+        asyncio.run(wrapped_worst_endpoint(1))
+    # TODO: How to check nested exception?
+    assert mocked_honeybadger.notify.call_count == 4
