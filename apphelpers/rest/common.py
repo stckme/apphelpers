@@ -43,6 +43,8 @@ def notify_honeybadger(honeybadger, error, func, args, kwargs):
             },
         )
     except HTTPError as e:
-        if e.response.status_code != 403:
+        if e.response.status_code == 403:
             # Ignore 403 Forbidden errors. We get alerted by HB anyway.
+            pass
+        else:
             raise e

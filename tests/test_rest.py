@@ -364,3 +364,11 @@ def test_honeybadger_wrapper():
     with pytest.raises(RuntimeError):
         wrapped_worst_endpoint(1)
     assert mocked_honeybadger.notify.call_count == 2
+
+    mocked_honeybadger.notify.side_effect = requests.exceptions.HTTPError(
+        response=mock.MagicMock(status_code=403)
+    )
+    with pytest.raises(RuntimeError) as e:
+        wrapped_worst_endpoint(1)
+        assert "HttpError" in str(e)
+    assert mocked_honeybadger.notify.call_count == 3

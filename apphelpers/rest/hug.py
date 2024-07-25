@@ -45,20 +45,25 @@ def honeybadger_wrapper(hb):
     def wrapper(f):
         @wraps(f)
         def f_wrapped(*args, **kw):
+            err_to_report = None
             try:
                 return f(*args, **kw)
             except BaseError as e:
                 if e.report:
-                    notify_honeybadger(
-                        honeybadger=hb, error=e, func=f, args=args, kwargs=kw
-                    )
+                    err_to_report = e
                 raise e
-
             except Exception as e:
-                notify_honeybadger(
-                    honeybadger=hb, error=e, func=f, args=args, kwargs=kw
-                )
+                err_to_report = e
                 raise e
+            finally:
+                if err_to_report:
+                    notify_honeybadger(
+                        honeybadger=hb,
+                        error=err_to_report,
+                        func=f,
+                        args=args,
+                        kwargs=kw,
+                    )
 
         return f_wrapped
 
