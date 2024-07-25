@@ -4,6 +4,7 @@ from unittest import mock
 import pytest
 import requests
 from converge import settings
+from requests.exceptions import HTTPError
 
 import apphelpers.sessions as sessionslib
 from apphelpers.db.piccolo import destroy_db_from_basetable, setup_db_from_basetable
@@ -368,10 +369,18 @@ def test_honeybadger_wrapper():
         asyncio.run(wrapped_worst_endpoint(1))
     assert mocked_honeybadger.notify.call_count == 2
 
-    mocked_honeybadger.notify.side_effect = requests.exceptions.HTTPError(
+    mocked_honeybadger.notify.side_effect = HTTPError(
         response=mock.MagicMock(status_code=403)
     )
-    with pytest.raises(RuntimeError) as e:
+    with pytest.raises(RuntimeError):
         asyncio.run(wrapped_worst_endpoint(1))
-        assert "HttpError" in str(e)
+    # TODO: How to check nested exception?
     assert mocked_honeybadger.notify.call_count == 3
+
+    mocked_honeybadger.notify.side_effect = HTTPError(
+        response=mock.MagicMock(status_code=401)
+    )
+    with pytest.raises(HTTPError):
+        asyncio.run(wrapped_worst_endpoint(1))
+    # TODO: How to check nested exception?
+    assert mocked_honeybadger.notify.call_count == 4
