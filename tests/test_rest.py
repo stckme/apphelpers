@@ -5,7 +5,6 @@ from unittest import mock
 import pytest
 import requests
 from converge import settings
-from exceptiongroup import ExceptionGroup
 from requests.exceptions import HTTPError
 
 import apphelpers.sessions as sessionslib
