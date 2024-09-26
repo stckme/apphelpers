@@ -1,6 +1,6 @@
 import hug
-import settings
 
+import settings
 from apphelpers.rest import endpoint as ep
 from apphelpers.rest.hug import APIFactory
 

@@ -3,7 +3,11 @@ from functools import wraps
 from typing import Annotated
 
 from converge import settings
-from fastapi import APIRouter, Depends, Header
+from fastapi import (
+    APIRouter,
+    Depends,
+    Header,
+)
 from fastapi.routing import APIRoute
 from starlette.requests import Request
 
@@ -16,7 +20,11 @@ from apphelpers.errors.fastapi import (
     InvalidSessionError,
 )
 from apphelpers.rest import endpoint as ep
-from apphelpers.rest.common import User, notify_honeybadger, phony
+from apphelpers.rest.common import (
+    User,
+    notify_honeybadger,
+    phony,
+)
 from apphelpers.sessions import SessionDBHandler
 
 if settings.get("HONEYBADGER_API_KEY"):

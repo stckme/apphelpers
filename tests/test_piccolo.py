@@ -1,9 +1,9 @@
 import asyncio
 
-import settings
 from piccolo import columns as col
 from piccolo.engine.postgres import PostgresEngine
 
+import settings
 from apphelpers.db.piccolo import (
     BaseTable,
     dbtransaction_ctx,

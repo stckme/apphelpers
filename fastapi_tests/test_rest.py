@@ -3,15 +3,15 @@ from unittest import mock
 
 import pytest
 from converge import settings
-from requests.exceptions import HTTPError
 from fastapi.testclient import TestClient
+from requests.exceptions import HTTPError
 
 import apphelpers.sessions as sessionslib
 from apphelpers.db.piccolo import destroy_db_from_basetable, setup_db_from_basetable
 from apphelpers.errors.fastapi import BaseError
 from apphelpers.rest.fastapi import honeybadger_wrapper
-from fastapi_tests.app.models import BaseTable
 from fastapi_tests import service
+from fastapi_tests.app.models import BaseTable
 
 base_url = "http://127.0.0.1:5000/"
 echo_url = base_url + "echo"

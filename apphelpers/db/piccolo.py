@@ -1,9 +1,17 @@
 from contextlib import asynccontextmanager
 from functools import wraps
-from typing import List, Set, Type
+from typing import (
+    List,
+    Set,
+    Type,
+)
 
 from piccolo.engine.postgres import PostgresEngine
-from piccolo.table import Table, create_db_tables_sync, drop_db_tables_sync
+from piccolo.table import (
+    Table,
+    create_db_tables_sync,
+    drop_db_tables_sync,
+)
 
 
 @asynccontextmanager

@@ -2,9 +2,9 @@
 from collections import namedtuple
 
 import pytest
-import settings
 
 import apphelpers.sessions as sessionslib
+import settings
 from apphelpers.errors import InvalidSessionError
 
 sessiondb_conn = dict(

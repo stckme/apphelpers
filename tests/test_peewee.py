@@ -1,7 +1,11 @@
-import settings
 from peewee import TextField
 
-from apphelpers.db.peewee import create_base_model, create_pgdb_pool, dbtransaction
+import settings
+from apphelpers.db.peewee import (
+    create_base_model,
+    create_pgdb_pool,
+    dbtransaction,
+)
 
 db = create_pgdb_pool(
     host=settings.DB_HOST,
