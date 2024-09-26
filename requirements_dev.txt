@@ -20,6 +20,7 @@ PyJWT
 black
 pre-commit
 fastapi
+httpx
 pytest
 uvicorn
 celery

@@ -1,8 +1,9 @@
 import inspect
 from functools import wraps
+from typing import Annotated
 
 from converge import settings
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from fastapi.routing import APIRoute
 from starlette.requests import Request
 
@@ -111,7 +112,7 @@ def honeybadger_wrapper(hb):
 
 
 async def get_current_user(request: Request):
-    return request.state.user
+    return request.state.user if request.state.user.id else None
 
 
 async def get_current_user_id(request: Request):
@@ -150,15 +151,21 @@ async def get_user_agent(request: Request):
     return request.headers.get("USER-AGENT", "")
 
 
-user = Depends(get_current_user)
-user_id = Depends(get_current_user_id)
-user_name = Depends(get_current_user_name)
-user_email = Depends(get_current_user_email)
-user_mobile = Depends(get_current_user_mobile)
-domain = Depends(get_current_domain)
-raw_body = Depends(get_raw_body)
-json_body = Depends(get_json_body)
-user_agent = Depends(get_user_agent)
+async def get_user_ip(request: Request):
+    return request.headers["X-FORWARDED-FOR"]
+
+
+user = Annotated[User, Depends(get_current_user)]
+user_id = Annotated[int, Depends(get_current_user_id)]
+user_name = Annotated[str, Depends(get_current_user_name)]
+user_email = Annotated[str, Depends(get_current_user_email)]
+user_mobile = Annotated[str, Depends(get_current_user_mobile)]
+domain = Annotated[str, Depends(get_current_domain)]
+raw_body = Annotated[bytes, Depends(get_raw_body)]
+json_body = Annotated[dict, Depends(get_json_body)]
+user_agent = Annotated[str, Depends(get_user_agent)]
+user_ip = Annotated[str, Depends(get_user_ip)]
+header = Annotated[str, Header()]
 
 
 def dbtransaction(engine, allow_nested=True):

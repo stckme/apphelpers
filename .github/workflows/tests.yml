@@ -38,7 +38,6 @@ jobs:
           pip install -r requirements_dev.txt
           pip install -e .
           gunicorn tests.service:__hug_wsgi__ -D
-          uvicorn fastapi_tests.service:app --port 5000 &
           # pre-commit run --all-files  TODO: check what's wrong in CI
           pytest tests
           pytest fastapi_tests
