@@ -6,7 +6,6 @@ import fastapi
 sys.path.append(os.getcwd() + "/..")
 
 import settings
-
 from apphelpers.rest.fastapi import APIFactory
 from fastapi_tests.app.endpoints import setup_routes
 from fastapi_tests.app.models import db

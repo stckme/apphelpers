@@ -4,7 +4,11 @@ from dataclasses import asdict, dataclass
 
 import hug
 from converge import settings
-from falcon import HTTPForbidden, HTTPNotFound, HTTPUnauthorized
+from falcon import (
+    HTTPForbidden,
+    HTTPNotFound,
+    HTTPUnauthorized,
+)
 from hug.decorators import wraps
 
 from apphelpers.db import dbtransaction

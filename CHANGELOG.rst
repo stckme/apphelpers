@@ -2,6 +2,10 @@
 History
 =======
 
+0.96.1 (2024-09-26)
+-------------------
+* Added annotated fastapi dependencies.
+
 0.96.0 (2024-07-25)
 -------------------
 * Possible fix for Honeybadger exception masking the actual exceptions.

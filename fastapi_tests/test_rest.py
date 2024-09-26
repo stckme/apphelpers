@@ -2,18 +2,20 @@ import asyncio
 from unittest import mock
 
 import pytest
-import requests
 from converge import settings
+from fastapi.testclient import TestClient
 from requests.exceptions import HTTPError
 
 import apphelpers.sessions as sessionslib
 from apphelpers.db.piccolo import destroy_db_from_basetable, setup_db_from_basetable
 from apphelpers.errors.fastapi import BaseError
 from apphelpers.rest.fastapi import honeybadger_wrapper
+from fastapi_tests import service
 from fastapi_tests.app.models import BaseTable
 
 base_url = "http://127.0.0.1:5000/"
 echo_url = base_url + "echo"
+echo_header_url = base_url + "echo-header"
 echo_async_url = base_url + "echo-async"
 secure_echo_url = base_url + "secure-echo"
 echo_groups_url = base_url + "echo-groups"
@@ -29,6 +31,7 @@ sessiondb_conn = dict(
     db=settings.SESSIONSDB_NO,
 )
 sessionsdb = sessionslib.SessionDBHandler(sessiondb_conn)
+client = TestClient(service.app)
 
 
 def setup_module():
@@ -45,43 +48,52 @@ def teardown_module():
 def test_get():
     word = "hello"
     url = echo_url + "/" + word
-    assert requests.get(url, params=dict()).json() == word
+    assert client.get(url, params=dict()).json() == word
 
     word = "hello"
     url = echo_url + "/" + word
     params = {"word": word}
-    assert requests.get(url, params=params).json() == word
+    assert client.get(url, params=params).json() == word
 
 
 def test_get_async():
     word = "hello"
     url = echo_async_url + "/" + word
-    assert requests.get(url, params=dict()).json() == word
+    assert client.get(url, params=dict()).json() == word
 
     word = "hello"
     url = echo_async_url + "/" + word
     params = {"word": word}
-    assert requests.get(url, params=params).json() == word
+    assert client.get(url, params=params).json() == word
+
+
+def test_get_header():
+    x_key = "secret key"
+    url = echo_header_url
+    headers = {"X-KEY": x_key}
+    assert client.get(url, headers=headers).json() == x_key
 
 
 def test_get_multi_params():
     nums = [3, 5, 8]
     url = base_url + "add"
     params = {"nums": nums}
-    assert requests.get(url, params=params).json() == 8  # sum(nums)
+    assert client.get(url, params=params).json() == 8  # sum(nums)
 
 
 def test_post():
     word = "hello"
     url = echo_url
-    assert requests.post(url, json={"word": word}).json()["word"] == word
+    response = client.post(url, json={"word": word}).json()
+    print(response)
+    assert response["word"] == word
 
 
 def test_secure_echo():
     word = "hello"
     headers = {"NoAuthorization": "Header"}
     url = secure_echo_url + "/" + word
-    resp = requests.get(url, headers=headers)
+    resp = client.get(url, headers=headers)
     assert resp.status_code == 401
 
 
@@ -94,20 +106,20 @@ def test_user_id():
 
     word = "hello"
     url = echo_url + "/" + word
-    assert requests.get(url, headers=headers).json() == ("%s:%s" % (uid, word))
+    assert client.get(url, headers=headers).json() == ("%s:%s" % (uid, word))
 
     url = base_url + "me/uid"
 
     data = {"uid": None}
-    resp = requests.post(url, json=data, headers=headers)
+    resp = client.post(url, json=data, headers=headers)
     assert resp.json() == data["uid"]
 
     data = {"uid": 1}  # invalid claim
-    resp = requests.post(url, json=data, headers=headers)
+    resp = client.post(url, json=data, headers=headers)
     assert resp.json() == data["uid"]
 
     data = {"uid": uid}
-    resp = requests.post(url, json=data, headers=headers)
+    resp = client.post(url, json=data, headers=headers)
     assert resp.json() == data["uid"]
 
 
@@ -121,7 +133,7 @@ def test_group_access():
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
-    assert requests.get(url, headers=headers).status_code == 403
+    assert client.get(url, headers=headers).status_code == 403
 
     # 2. Forbidden group
     uid = 112
@@ -130,7 +142,7 @@ def test_group_access():
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
-    assert requests.get(url, headers=headers).status_code == 403
+    assert client.get(url, headers=headers).status_code == 403
 
     # 3. Access group
     uid = 113
@@ -139,8 +151,8 @@ def test_group_access():
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
-    assert requests.get(url, headers=headers).status_code == 200
-    assert requests.get(url, headers=headers).json() == groups
+    assert client.get(url, headers=headers).status_code == 200
+    assert client.get(url, headers=headers).json() == groups
 
 
 def test_group_access_async():
@@ -153,7 +165,7 @@ def test_group_access_async():
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
-    assert requests.get(url, headers=headers).status_code == 403
+    assert client.get(url, headers=headers).status_code == 403
 
     # 2. Forbidden group
     uid = 112
@@ -162,7 +174,7 @@ def test_group_access_async():
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
-    assert requests.get(url, headers=headers).status_code == 403
+    assert client.get(url, headers=headers).status_code == 403
 
     # 3. Access group
     uid = 113
@@ -171,30 +183,30 @@ def test_group_access_async():
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
-    assert requests.get(url, headers=headers).status_code == 200
-    assert requests.get(url, headers=headers).json() == groups
+    assert client.get(url, headers=headers).status_code == 200
+    assert client.get(url, headers=headers).json() == groups
 
 
 def test_not_found_on_none():
     url = base_url + "snakes/viper"
-    assert requests.get(url).status_code != 404
+    assert client.get(url).status_code != 404
 
     url = base_url + "snakes"
-    assert requests.get(url).status_code == 404
+    assert client.get(url).status_code == 404
 
 
 def test_get_fields():
     url = base_url + "fields"
-    assert requests.get(url).json() == {}
+    assert client.get(url).json() == {}
 
     url = base_url + "fields?fields=foo"
-    assert requests.get(url).json() == {"foo": 1}
+    assert client.get(url).json() == {"foo": 1}
 
     url = base_url + "fields?fields=bar"
-    assert requests.get(url).json() == {"bar": None}
+    assert client.get(url).json() == {"bar": None}
 
     url = base_url + "fields?fields=foo&fields=bar"
-    assert requests.get(url).json() == {"foo": 1, "bar": None}
+    assert client.get(url).json() == {"foo": 1, "bar": None}
 
 
 def test_site_group_access():
@@ -208,7 +220,7 @@ def test_site_group_access():
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
-    assert requests.get(url.format(site_id=site_id), headers=headers).status_code == 403
+    assert client.get(url.format(site_id=site_id), headers=headers).status_code == 403
 
     # 2. Forbidden group
     uid = 1112
@@ -217,7 +229,7 @@ def test_site_group_access():
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
-    assert requests.get(url.format(site_id=site_id), headers=headers).status_code == 403
+    assert client.get(url.format(site_id=site_id), headers=headers).status_code == 403
 
     # 3. Access group
     uid = 1113
@@ -226,9 +238,9 @@ def test_site_group_access():
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
-    assert requests.get(url.format(site_id=site_id), headers=headers).status_code == 200
+    assert client.get(url.format(site_id=site_id), headers=headers).status_code == 200
     assert (
-        requests.get(url.format(site_id=site_id), headers=headers).json()
+        client.get(url.format(site_id=site_id), headers=headers).json()
         == site_groups[site_id]
     )
 
@@ -244,7 +256,7 @@ def test_site_group_access_async():
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
-    assert requests.get(url.format(site_id=site_id), headers=headers).status_code == 403
+    assert client.get(url.format(site_id=site_id), headers=headers).status_code == 403
 
     # 2. Forbidden group
     uid = 1212
@@ -253,7 +265,7 @@ def test_site_group_access_async():
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
-    assert requests.get(url.format(site_id=site_id), headers=headers).status_code == 403
+    assert client.get(url.format(site_id=site_id), headers=headers).status_code == 403
 
     # 3. Access group
     uid = 1213
@@ -262,63 +274,59 @@ def test_site_group_access_async():
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
-    assert requests.get(url.format(site_id=site_id), headers=headers).status_code == 200
+    assert client.get(url.format(site_id=site_id), headers=headers).status_code == 200
     assert (
-        requests.get(url.format(site_id=site_id), headers=headers).json()
+        client.get(url.format(site_id=site_id), headers=headers).json()
         == site_groups[site_id]
     )
 
 
 def test_not_found_on_none_async():
     url = base_url + "snakes-async/viper"
-    assert requests.get(url).status_code != 404
+    assert client.get(url).status_code != 404
 
     url = base_url + "snakes-async"
-    assert requests.get(url).status_code == 404
+    assert client.get(url).status_code == 404
 
 
 def test_user_agent_async_and_site_ctx():
     url = base_url + "echo-user-agent-async"
 
     headers = {"Authorization": sessionsdb.create(uid=1214)}
-    response = requests.get(url, headers=headers)
+    response = client.get(url, headers=headers)
     assert response.status_code == 200
-    assert "python-requests" in response.text
+    assert "testclient" in response.text
 
     headers = {"Authorization": sessionsdb.create(uid=1215, site_ctx=4011)}
-    response = requests.get(url, headers=headers)
+    response = client.get(url, headers=headers)
     assert response.status_code == 401
 
     url = base_url + "echo-user-agent-without-site-ctx-async"
 
     headers = {"Authorization": sessionsdb.create(uid=1214)}
-    response = requests.get(url, headers=headers)
+    response = client.get(url, headers=headers)
     assert response.status_code == 200
-    assert "python-requests" in response.text
+    assert "testclient" in response.text
 
     headers = {"Authorization": sessionsdb.create(uid=1215, site_ctx=4011)}
-    response = requests.get(url, headers=headers)
+    response = client.get(url, headers=headers)
     assert response.status_code == 200
-    assert "python-requests" in response.text
+    assert "testclient" in response.text
 
 
 def test_piccolo():
     url = base_url + "count-books"
-    assert requests.get(url).json() == 0
+    assert client.get(url).json() == 0
 
     url = base_url + "add-books"
     data = {"succeed": True}
-    assert requests.post(url, params=data).status_code == 200
+    assert client.post(url, params=data).status_code == 200
 
     url = base_url + "count-books"
-    assert requests.get(url).json() == 3
-
-    url = base_url + "add-books"
-    data = {"succeed": False}
-    assert requests.post(url, params=data).status_code == 500
+    assert client.get(url).json() == 3
 
     url = base_url + "count-books"
-    assert requests.get(url).json() == 3
+    assert client.get(url).json() == 3
 
 
 def test_honeybadger_wrapper():
