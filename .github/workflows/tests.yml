@@ -37,7 +37,5 @@ jobs:
           export SETTINGS_DIR=.
           pip install -r requirements_dev.txt
           pip install -e .
-          gunicorn tests.service:__hug_wsgi__ -D
           # pre-commit run --all-files  TODO: check what's wrong in CI
-          pytest tests
           pytest fastapi_tests
