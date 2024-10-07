@@ -2,6 +2,10 @@
 History
 =======
 
+0.96.3 (2024-10-07)
+-------------------
+* Fixed peewee dbtransaction for fastapi.
+
 0.96.2 (2024-10-07)
 -------------------
 * Removed deprecated peewee autorollback option.

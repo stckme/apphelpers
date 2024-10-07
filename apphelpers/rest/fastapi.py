@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Header
 from fastapi.routing import APIRoute
 from starlette.requests import Request
 
-from apphelpers.db import dbtransaction_ctx
+from apphelpers.db import dbtransaction_ctx, peewee_enabled
 from apphelpers.errors.fastapi import (
     BaseError,
     HTTP401Unauthorized,
@@ -168,12 +168,23 @@ user_ip = Annotated[str, Depends(get_user_ip)]
 header = Annotated[str, Header()]
 
 
-def dbtransaction(engine, allow_nested=True):
-    async def dependency():
-        async with dbtransaction_ctx(engine, allow_nested=allow_nested):
-            yield
+if peewee_enabled:
 
-    return Depends(dependency)
+    def dbtransaction(engine):
+        async def dependency():
+            with dbtransaction_ctx(engine):
+                yield
+
+        return Depends(dependency)
+
+else:
+
+    def dbtransaction(engine, allow_nested=True):
+        async def dependency():
+            async with dbtransaction_ctx(engine, allow_nested=allow_nested):
+                yield
+
+        return Depends(dependency)
 
 
 class SecureRouter(APIRoute):
