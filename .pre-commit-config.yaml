@@ -4,8 +4,6 @@ repos:
     hooks:
       - id: isort
         args:
-          - --profile=black
-          - --filter-files
           - --multi-line=VERTICAL_HANGING_INDENT
 
   - repo: https://github.com/psf/black
