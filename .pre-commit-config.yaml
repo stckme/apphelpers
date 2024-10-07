@@ -6,7 +6,7 @@ repos:
         args:
           - --profile=black
           - --filter-files
-          - --force-grid-wrap=3
+          - --multi-line=VERTICAL_HANGING_INDENT
 
   - repo: https://github.com/psf/black
     rev: 24.8.0

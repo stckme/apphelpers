@@ -4,13 +4,7 @@ from fastapi import Query
 from pydantic import BaseModel
 
 from apphelpers.rest import endpoint as ep
-from apphelpers.rest.fastapi import (
-    header,
-    json_body,
-    user,
-    user_agent,
-    user_id,
-)
+from apphelpers.rest.fastapi import header, json_body, user, user_agent, user_id
 from fastapi_tests.app.models import Book
 
 
