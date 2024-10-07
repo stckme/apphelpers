@@ -1,5 +1,3 @@
-import os
-import time
 from unittest import mock
 
 import falcon
@@ -35,23 +33,6 @@ sessiondb_conn = dict(
 )
 sessionsdb = sessionslib.SessionDBHandler(sessiondb_conn)
 sessionsdb.destroy_all()
-
-
-def gunicorn_setup_module():  # not working
-    if os.path.exists(pid_path):
-        os.remove(pid_path)
-    cmd = f"gunicorn tests.service:__hug_wsgi__  -p {pid_path} -D"
-    os.system(cmd)
-    for i in range(10):
-        if os.path.exists(pid_path):
-            time.sleep(2)
-            break
-
-
-def gunicorn_teardown_module():
-    if os.path.exists(pid_path):
-        cmd = f"kill -9 `cat {pid_path}`"
-        os.system(cmd)
 
 
 def test_get():
