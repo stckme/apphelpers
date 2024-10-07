@@ -41,7 +41,6 @@ def create_pgdb_pool(
         user=user,
         password=password,
         max_connections=max_connections,
-        autorollback=True,
         register_hstore=False,
         stale_timeout=60 * 2,
     )  # 2 minutes
