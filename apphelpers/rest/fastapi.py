@@ -346,7 +346,8 @@ class APIFactory:
         self.honeybadger_wrapper = phony
         if site_identifier:
             self.enable_multi_site(site_identifier)
-        self.setup_session_db(sessiondb_conn)
+        if sessiondb_conn:
+            self.setup_session_db(sessiondb_conn)
         self.router = APIRouter(route_class=Router)
         self.secure_router = APIRouter(route_class=SecureRouter)
 
