@@ -5,10 +5,10 @@ import fastapi
 
 sys.path.append(os.getcwd() + "/..")
 
-import settings
-from apphelpers.rest.fastapi import APIFactory
-from fastapi_tests.app.endpoints import setup_routes
-from fastapi_tests.app.models import db
+import settings  # noqa E402
+from apphelpers.rest.fastapi import APIFactory  # noqa E402
+from fastapi_tests.app.endpoints import setup_routes  # noqa E402
+from fastapi_tests.app.models import db  # noqa E402
 
 
 def make_app():
