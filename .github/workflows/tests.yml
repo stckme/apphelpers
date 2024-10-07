@@ -39,3 +39,4 @@ jobs:
           pip install -e .
           pre-commit run --all-files
           pytest fastapi_tests
+          pytest tests
