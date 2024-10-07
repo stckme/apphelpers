@@ -1,15 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import (
-    asdict,
-    dataclass,
-    field,
-)
-from typing import (
-    Dict,
-    List,
-    Optional,
-)
+from dataclasses import asdict, dataclass, field
+from typing import Dict, List, Optional
 
 from converge import settings
 from requests.exceptions import HTTPError

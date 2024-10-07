@@ -83,7 +83,6 @@ Ready to contribute? Here's how to set up `apphelpers` for local development.
 
    $ export SETTINGS_DIR=.
    $ docker-compose up -d  # start postgres and redis
-   $ gunicorn tests.service:__hug_wsgi__
    $ pytest tests
 
 6. When you're done making changes for fastapi, check that your changes pass flake8 and the
@@ -92,7 +91,6 @@ Ready to contribute? Here's how to set up `apphelpers` for local development.
 
    $ export SETTINGS_DIR=.
    $ docker-compose up -d  # start postgres and redis
-   $ uvicorn fastapi_tests.service:app --host 0.0.0.0 --port 5000
    $ pytest fastapi_tests
 
 7. Commit your changes and push your branch to GitHub::

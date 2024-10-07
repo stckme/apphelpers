@@ -1,9 +1,8 @@
-import os
-import time
 from unittest import mock
 
+import falcon
+import hug
 import pytest
-import requests
 from converge import settings
 from requests.exceptions import HTTPError
 
@@ -11,17 +10,17 @@ import apphelpers.sessions as sessionslib
 from apphelpers.errors.hug import BaseError
 from apphelpers.rest.hug import honeybadger_wrapper
 
+from . import service
 from .app.models import globalgroups, sitegroups
 
 
 class urls:
-    base = "http://127.0.0.1:8000/"
-    echo = base + "echo"
-    echo_for_registered = base + "secure-echo"
-    echo_for_groups = base + "echo-groups"
-    echo_for_sitegroups = base + "sites/1/echo-groups"
-    echo_for_all_groups = base + "sites/1/echo-all-groups"
-    echo_for_custom_authorization = base + "custom-authorization-echo"
+    echo = "echo"
+    echo_for_registered = "secure-echo"
+    echo_for_groups = "echo-groups"
+    echo_for_sitegroups = "sites/1/echo-groups"
+    echo_for_all_groups = "sites/1/echo-all-groups"
+    echo_for_custom_authorization = "custom-authorization-echo"
 
 
 pid_path = "tests/run/app.pid"
@@ -36,55 +35,38 @@ sessionsdb = sessionslib.SessionDBHandler(sessiondb_conn)
 sessionsdb.destroy_all()
 
 
-def gunicorn_setup_module():  # not working
-    if os.path.exists(pid_path):
-        os.remove(pid_path)
-    cmd = f"gunicorn tests.service:__hug_wsgi__  -p {pid_path} -D"
-    os.system(cmd)
-    for i in range(10):
-        if os.path.exists(pid_path):
-            time.sleep(2)
-            break
-
-
-def gunicorn_teardown_module():
-    if os.path.exists(pid_path):
-        cmd = f"kill -9 `cat {pid_path}`"
-        os.system(cmd)
-
-
 def test_get():
     word = "hello"
     url = urls.echo + "/" + word
-    assert requests.get(url).json() == word
+    assert hug.test.get(service, url).data == word
 
 
 def test_get_params():
     word = "hello"
     url = urls.echo + "/" + word
     params = {"word": word}
-    assert requests.get(url, params=params).json() == word
+    assert hug.test.get(service, url, params=params).data == word
 
 
 def test_get_multi_params():
     nums = [3, 5]
-    url = urls.base + "add"
+    url = "add"
     params = {"nums": nums}
-    assert requests.get(url, params=params).json() == sum(nums)
+    assert hug.test.get(service, url, params=params).data == sum(nums)
 
 
 def test_post():
     word = "hello"
     url = urls.echo
-    assert requests.post(url, json={"word": word}).json() == word
+    assert hug.test.post(service, url, body={"word": word}).data == word
 
 
 def test_echo_for_registered():
     word = "hello"
     headers = {"NoAuthorization": "Header"}
     url = urls.echo_for_registered + "/" + word
-    resp = requests.get(url, headers=headers)
-    assert resp.status_code == 401
+    resp = hug.test.get(service, url, headers=headers)
+    assert resp.status == falcon.HTTP_UNAUTHORIZED
 
 
 def test_user_id():
@@ -96,21 +78,21 @@ def test_user_id():
 
     word = "hello"
     url = urls.echo + "/" + word
-    assert requests.get(url, headers=headers).json() == ("%s:%s" % (uid, word))
+    assert hug.test.get(service, url, headers=headers).data == ("%s:%s" % (uid, word))
 
-    url = urls.base + "me/uid"
+    url = "me/uid"
 
     data = {"uid": None}
-    resp = requests.post(url, json=data, headers=headers)
-    assert resp.json() == uid
+    resp = hug.test.post(service, url, body=data, headers=headers)
+    assert resp.data == uid
 
     data = {"uid": 1}  # invalid claim
-    resp = requests.post(url, json=data, headers=headers)
-    assert resp.json() == uid
+    resp = hug.test.post(service, url, body=data, headers=headers)
+    assert resp.data == uid
 
     data = {"uid": uid}
-    resp = requests.post(url, json=data, headers=headers)
-    assert resp.json() == uid
+    resp = hug.test.post(service, url, body=data, headers=headers)
+    assert resp.data == uid
 
 
 def test_group_access():
@@ -122,7 +104,7 @@ def test_group_access():
     url = urls.echo_for_groups
 
     headers = {"Authorization": sid}
-    assert requests.get(url, headers=headers).status_code == 403
+    assert hug.test.get(service, url, headers=headers).status == falcon.HTTP_FORBIDDEN
 
     # 2. Forbidden group
     uid = 112
@@ -132,7 +114,7 @@ def test_group_access():
     url = urls.echo_for_groups
 
     headers = {"Authorization": sid}
-    assert requests.get(url, headers=headers).status_code == 403
+    assert hug.test.get(service, url, headers=headers).status == falcon.HTTP_FORBIDDEN
 
     # 3. Access group
     uid = 113
@@ -141,7 +123,7 @@ def test_group_access():
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
-    assert requests.get(url, headers=headers).status_code == 200
+    assert hug.test.get(service, url, headers=headers).status == falcon.HTTP_OK
 
     # 4. Other groups
     uid = 112
@@ -151,7 +133,7 @@ def test_group_access():
     url = urls.echo_for_groups
 
     headers = {"Authorization": sid}
-    assert requests.get(url, headers=headers).status_code == 403
+    assert hug.test.get(service, url, headers=headers).status == falcon.HTTP_FORBIDDEN
 
 
 def test_not_found():
@@ -161,19 +143,19 @@ def test_not_found():
 
     headers = {"Authorization": sid}
 
-    url = urls.base + "snakes/"
-    assert requests.get(url).status_code == 404
+    url = "snakes/"
+    assert hug.test.get(service, url).status == falcon.HTTP_NOT_FOUND
 
-    url = urls.base + "snakes/viper"
-    resp = requests.get(url)
-    assert resp.status_code == 200
-    assert resp.json() == "viper"
+    url = "snakes/viper"
+    resp = hug.test.get(service, url)
+    assert resp.status == falcon.HTTP_OK
+    assert resp.data == "viper"
 
-    url = urls.base + "sites/1/snakes/"
-    assert requests.get(url, headers=headers).status_code == 404
+    url = "sites/1/snakes/"
+    assert hug.test.get(service, url, headers=headers).status == falcon.HTTP_NOT_FOUND
 
-    url = urls.base + "sites/1/snakes/viper"
-    assert requests.get(url, headers=headers).status_code == 200
+    url = "sites/1/snakes/viper"
+    assert hug.test.get(service, url, headers=headers).status == falcon.HTTP_OK
 
 
 def test_site_group_access():
@@ -186,7 +168,7 @@ def test_site_group_access():
     url = urls.echo_for_sitegroups
 
     headers = {"Authorization": sid}
-    assert requests.get(url, headers=headers).status_code == 403
+    assert hug.test.get(service, url, headers=headers).status == falcon.HTTP_FORBIDDEN
 
     # 2. Forbidden group
     uid = 115
@@ -197,7 +179,7 @@ def test_site_group_access():
     url = urls.echo_for_sitegroups
 
     headers = {"Authorization": sid}
-    assert requests.get(url, headers=headers).status_code == 403
+    assert hug.test.get(service, url, headers=headers).status == falcon.HTTP_FORBIDDEN
 
     # 3. Access group
     uid = 116
@@ -207,7 +189,7 @@ def test_site_group_access():
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
-    assert requests.get(url, headers=headers).status_code == 200
+    assert hug.test.get(service, url, headers=headers).status == falcon.HTTP_OK
 
 
 def test_all_site_group_access():
@@ -221,7 +203,7 @@ def test_all_site_group_access():
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
-    assert requests.get(url, headers=headers).status_code == 403
+    assert hug.test.get(service, url, headers=headers).status == falcon.HTTP_FORBIDDEN
 
     # 2. Forbidden group
     uid = 115
@@ -231,7 +213,7 @@ def test_all_site_group_access():
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
-    assert requests.get(url, headers=headers).status_code == 403
+    assert hug.test.get(service, url, headers=headers).status == falcon.HTTP_FORBIDDEN
 
     # 3. Access group
     uid = 116
@@ -241,7 +223,7 @@ def test_all_site_group_access():
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
-    assert requests.get(url, headers=headers).status_code == 200
+    assert hug.test.get(service, url, headers=headers).status == falcon.HTTP_OK
 
 
 def test_bound_site_group_access():
@@ -254,7 +236,7 @@ def test_bound_site_group_access():
     url = urls.echo_for_sitegroups
 
     headers = {"Authorization": sid}
-    assert requests.get(url, headers=headers).status_code == 403
+    assert hug.test.get(service, url, headers=headers).status == falcon.HTTP_FORBIDDEN
 
     # 2. Access group
     uid = 122
@@ -264,7 +246,7 @@ def test_bound_site_group_access():
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
-    assert requests.get(url, headers=headers).status_code == 200
+    assert hug.test.get(service, url, headers=headers).status == falcon.HTTP_OK
 
     # 2. Access group of Unbound site
     uid = 123
@@ -274,7 +256,9 @@ def test_bound_site_group_access():
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
-    assert requests.get(url, headers=headers).status_code == 401
+    assert (
+        hug.test.get(service, url, headers=headers).status == falcon.HTTP_UNAUTHORIZED
+    )
 
     uid = 123
     groups = [globalgroups.privileged.value]
@@ -283,21 +267,25 @@ def test_bound_site_group_access():
     sid = sessionsdb.create(**d)
 
     headers = {"Authorization": sid}
-    assert requests.get(url, headers=headers).status_code == 403
+    assert hug.test.get(service, url, headers=headers).status == falcon.HTTP_FORBIDDEN
 
 
 def test_request_access():
-    url = urls.base + "request-and-body"
-    req = requests.post(url, data={"z": 1}, headers={"testheader": "testheader-value"})
-    resp = req.json()
+    url = "request-and-body"
+    req = hug.test.post(
+        service, url, body={"z": 1}, headers={"testheader": "testheader-value"}
+    )
+    resp = req.data
     assert "testheader".upper() in resp["headers"]
-    assert resp["body"] == {"z": "1"}
+    assert resp["body"] == {"z": 1}
 
 
 def test_raw_request():
-    url = urls.base + "request-raw-body"
-    req = requests.post(url, data={"z": 1}, headers={"testheader": "testheader-value"})
-    resp = req.json()
+    url = "request-raw-body"
+    req = hug.test.post(
+        service, url, body={"z": 1}, headers={"testheader": "testheader-value"}
+    )
+    resp = req.data
     assert "testheader".upper() in resp["headers"]
 
 
@@ -309,13 +297,13 @@ def test_custom_authorization_access():
     headers = {"Authorization": sid}
 
     url = urls.echo_for_custom_authorization + "/authorized"
-    assert requests.get(url).status_code == 401
+    assert hug.test.get(service, url).status == falcon.HTTP_UNAUTHORIZED
 
     url = urls.echo_for_custom_authorization + "/authorized"
-    assert requests.get(url, headers=headers).status_code == 200
+    assert hug.test.get(service, url, headers=headers).status == falcon.HTTP_OK
 
     url = urls.echo_for_custom_authorization + "/unauthorized"
-    assert requests.get(url, headers=headers).status_code == 403
+    assert hug.test.get(service, url, headers=headers).status == falcon.HTTP_FORBIDDEN
 
 
 def test_honeybadger_wrapper():

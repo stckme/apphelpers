@@ -2,6 +2,10 @@
 History
 =======
 
+0.96.2 (2024-10-07)
+-------------------
+* Removed deprecated peewee autorollback option.
+
 0.96.1 (2024-09-26)
 -------------------
 * Added annotated fastapi dependencies.

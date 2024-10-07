@@ -23,7 +23,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(".."))
 
-import apphelpers
+import apphelpers  # noqa E402
 
 # -- General configuration ---------------------------------------------
 

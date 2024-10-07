@@ -1,12 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import (
-    Any,
-    ClassVar,
-    List,
-    Optional,
-)
+from typing import Any, ClassVar, List, Optional
 
 from redis import Redis
 

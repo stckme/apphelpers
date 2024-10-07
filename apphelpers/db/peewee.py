@@ -41,7 +41,6 @@ def create_pgdb_pool(
         user=user,
         password=password,
         max_connections=max_connections,
-        autorollback=True,
         register_hstore=False,
         stale_timeout=60 * 2,
     )  # 2 minutes
@@ -54,7 +53,12 @@ def create_base_model(db):
             only_save_dirty = True
 
         def to_dict(self, only=None, exclude=None, recurse=False):
-            return model_to_dict(self, only=only, exclude=exclude, recurse=recurse)
+            return model_to_dict(
+                self,
+                only=only,
+                exclude=exclude,
+                recurse=recurse,
+            )
 
     return BaseModel
 
@@ -77,8 +81,8 @@ def dbtransaction_ctx(db):
 def dbtransaction(db):
     """
     wrapper that make db transactions automic
-    note db connections are used only when it is needed (hence there is no usual
-    connection open/close)
+    note db connections are used only when it is needed (hence there is no
+    usual connection open/close)
     """
 
     def wrapper(f):
@@ -97,8 +101,8 @@ def enumify(TheModel, name_field="name", val_field="id"):
     Converts a model rows into an enum
     Can be effective cache for mostly unchanging data.
     Limitation: No auto updates. If you update the model and you are using
-    process manager like gunicorn you would need to restart to rnsure enums are
-    updated
+    process manager like gunicorn you would need to restart to rnsure enums
+    are updated
 
     eg.
     >>> class Week(BaseModel):
@@ -130,7 +134,8 @@ def get_sub_models(base_model):
 
 
 # Useful functions for test/dev setups
-# NOTE: For below functions, models is list of model classes sorted by dependency
+# NOTE: For below functions, models is list of model classes sorted by
+# dependency
 # Example: [Author, Publication, Post, Comment]
 
 
