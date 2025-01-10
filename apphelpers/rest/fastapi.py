@@ -111,6 +111,45 @@ def honeybadger_wrapper(hb):
     return wrapper
 
 
+if peewee_enabled:
+
+    def dbtransaction(db):
+        """
+        wrapper that make db transactions automic
+        note db connections are used only when it is needed (hence there is no
+        usual connection open/close)
+        """
+
+        def wrapper(f):
+            if inspect.iscoroutinefunction(f):
+
+                @wraps(f)
+                async def async_wrapper(*ar, **kw):
+                    with dbtransaction_ctx(db):
+                        return await f(*ar, **kw)
+
+                return async_wrapper
+            else:
+
+                @wraps(f)
+                async def sync_wrapper(*ar, **kw):
+                    with dbtransaction_ctx(db):
+                        return f(*ar, **kw)
+
+                return sync_wrapper
+
+        return wrapper
+
+else:
+    # for piccolo db
+    def dbtransaction(engine, allow_nested=True):
+        async def dependency():
+            async with dbtransaction_ctx(engine, allow_nested=allow_nested):
+                yield
+
+        return Depends(dependency)
+
+
 async def get_current_user(request: Request):
     return request.state.user if request.state.user.id else None
 
@@ -166,45 +205,6 @@ json_body = Annotated[dict, Depends(get_json_body)]
 user_agent = Annotated[str, Depends(get_user_agent)]
 user_ip = Annotated[str, Depends(get_user_ip)]
 header = Annotated[str, Header()]
-
-
-if peewee_enabled:
-
-    def dbtransaction(db):
-        """
-        wrapper that make db transactions automic
-        note db connections are used only when it is needed (hence there is no
-        usual connection open/close)
-        """
-
-        def wrapper(f):
-            if inspect.iscoroutinefunction(f):
-
-                @wraps(f)
-                async def async_wrapper(*ar, **kw):
-                    with dbtransaction_ctx(db):
-                        return await f(*ar, **kw)
-
-                return async_wrapper
-            else:
-
-                @wraps(f)
-                async def sync_wrapper(*ar, **kw):
-                    with dbtransaction_ctx(db):
-                        return f(*ar, **kw)
-
-                return sync_wrapper
-
-        return wrapper
-
-else:
-
-    def dbtransaction(engine, allow_nested=True):
-        async def dependency():
-            async with dbtransaction_ctx(engine, allow_nested=allow_nested):
-                yield
-
-        return Depends(dependency)
 
 
 class SecureRouter(APIRoute):
@@ -377,7 +377,10 @@ class APIFactory:
         self.site_identifier = site_identifier
 
     def setup_db_transaction(self, db):
-        self.db_tr_wrapper = dbtransaction(db)
+        if peewee_enabled:
+            self.db_tr_wrapper = dbtransaction(db)
+        else:
+            self.router.dependencies.append(dbtransaction(db))
 
     def setup_honeybadger_monitoring(self):
         api_key = settings.HONEYBADGER_API_KEY
