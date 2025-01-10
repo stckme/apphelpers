@@ -111,6 +111,45 @@ def honeybadger_wrapper(hb):
     return wrapper
 
 
+if peewee_enabled:
+
+    def dbtransaction(db):
+        """
+        wrapper that make db transactions automic
+        note db connections are used only when it is needed (hence there is no
+        usual connection open/close)
+        """
+
+        def wrapper(f):
+            if inspect.iscoroutinefunction(f):
+
+                @wraps(f)
+                async def async_wrapper(*ar, **kw):
+                    with dbtransaction_ctx(db):
+                        return await f(*ar, **kw)
+
+                return async_wrapper
+            else:
+
+                @wraps(f)
+                async def sync_wrapper(*ar, **kw):
+                    with dbtransaction_ctx(db):
+                        return f(*ar, **kw)
+
+                return sync_wrapper
+
+        return wrapper
+
+else:
+    # for piccolo db
+    def dbtransaction(engine, allow_nested=True):
+        async def dependency():
+            async with dbtransaction_ctx(engine, allow_nested=allow_nested):
+                yield
+
+        return Depends(dependency)
+
+
 async def get_current_user(request: Request):
     return request.state.user if request.state.user.id else None
 
@@ -166,25 +205,6 @@ json_body = Annotated[dict, Depends(get_json_body)]
 user_agent = Annotated[str, Depends(get_user_agent)]
 user_ip = Annotated[str, Depends(get_user_ip)]
 header = Annotated[str, Header()]
-
-
-if peewee_enabled:
-
-    def dbtransaction(engine):
-        async def dependency():
-            with dbtransaction_ctx(engine):
-                yield
-
-        return Depends(dependency)
-
-else:
-
-    def dbtransaction(engine, allow_nested=True):
-        async def dependency():
-            async with dbtransaction_ctx(engine, allow_nested=allow_nested):
-                yield
-
-        return Depends(dependency)
 
 
 class SecureRouter(APIRoute):
@@ -343,6 +363,7 @@ class APIFactory:
         self.multi_site_enabled = False
         self.site_identifier = site_identifier
         self.urls_prefix = urls_prefix
+        self.db_tr_wrapper = phony
         self.honeybadger_wrapper = phony
         if site_identifier:
             self.enable_multi_site(site_identifier)
@@ -356,7 +377,10 @@ class APIFactory:
         self.site_identifier = site_identifier
 
     def setup_db_transaction(self, db):
-        self.router.dependencies.append(dbtransaction(db))
+        if peewee_enabled:
+            self.db_tr_wrapper = dbtransaction(db)
+        else:
+            self.router.dependencies.append(dbtransaction(db))
 
     def setup_honeybadger_monitoring(self):
         api_key = settings.HONEYBADGER_API_KEY
@@ -558,7 +582,9 @@ class APIFactory:
             f"[{method.__name__.upper()}] => {f.__module__}:{f.__name__}",
         )
         m = method(*method_args, **method_kw)
-        f = self.access_wrapper(self.honeybadger_wrapper(raise_not_found_on_none(f)))
+        f = self.access_wrapper(
+            self.honeybadger_wrapper(raise_not_found_on_none(self.db_tr_wrapper(f)))
+        )
         # NOTE: ^ wrapper ordering is important. access_wrapper needs request which
         # others don't. If access_wrapper comes late in the order it won't be passed
         # request parameter.
