@@ -70,3 +70,10 @@ def response_model(response_model):
         return func
 
     return decorator
+
+
+def skip_dbtransaction(func):
+    """Skip database transaction for this endpoint."""
+
+    func.skip_dbtransaction = True
+    return func
