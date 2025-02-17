@@ -1,3 +1,4 @@
+import pytest
 from peewee import TextField
 
 import settings
@@ -35,6 +36,8 @@ def teardown_module():
 
 
 def test_add_with_tr():
+    Book.delete().execute()
+
     add_book = dbtransaction(_add_book)
     name = "The Pillars of the Earth"
     add_book(name)
@@ -43,10 +46,8 @@ def test_add_with_tr():
 
     add_book_loser = dbtransaction(_add_book_loser)
     name = "The Cathedral and the Bazaar"
-    try:
+    with pytest.raises(NameError):
         add_book_loser(name)
-    except NameError:
-        pass
     names = [b.name for b in Book.select()]
     assert name not in names
 
