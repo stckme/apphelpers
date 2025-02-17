@@ -36,6 +36,8 @@ def teardown_module():
 
 
 def test_add_with_tr():
+    Book.delete().execute()
+
     add_book = dbtransaction(_add_book)
     name = "The Pillars of the Earth"
     add_book(name)
