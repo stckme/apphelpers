@@ -85,7 +85,6 @@ def test_post():
     word = "hello"
     url = echo_url
     response = client.post(url, json={"word": word}).json()
-    print(response)
     assert response["word"] == word
 
 

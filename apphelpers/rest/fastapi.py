@@ -17,7 +17,7 @@ from apphelpers.errors.fastapi import (
 )
 from apphelpers.rest import endpoint as ep
 from apphelpers.rest.common import User, notify_honeybadger, phony
-from apphelpers.sessions import SessionDBHandler
+from apphelpers.async_sessions import SessionDBHandler
 
 if settings.get("HONEYBADGER_API_KEY"):
     from honeybadger import Honeybadger
@@ -230,7 +230,7 @@ class SecureRouter(APIRoute):
 
             token = _request.headers.get("Authorization")
             if token:
-                session = self.sessions.get(  # type: ignore
+                session = await self.sessions.get(  # type: ignore
                     token,
                     [
                         "uid",
@@ -305,7 +305,7 @@ class Router(APIRoute):
             token = _request.headers.get("Authorization")
             if token:
                 try:
-                    session = self.sessions.get(  # type: ignore
+                    session = await self.sessions.get(  # type: ignore
                         token,
                         [
                             "uid",
