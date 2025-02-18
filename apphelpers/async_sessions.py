@@ -95,7 +95,6 @@ class SessionDBHandler:
 
     async def uid2bound_sids(self, uid):
         keys = await self.rconn.keys(rev_lookup_key(uid, "*"))
-        print(keys)
         return [(await self.rconn.get(key)).decode() for key in keys]
 
     async def uid2bound_site_ids(self, uid):
