@@ -2,11 +2,12 @@ import asyncio
 
 from piccolo import columns as col
 from piccolo.engine.postgres import PostgresEngine
+import pytest
 
 import settings
 from apphelpers.db.piccolo import (
     BaseTable,
-    dbtransaction_ctx,
+    dbtransaction,
     destroy_db_from_basetable,
     setup_db_from_basetable,
 )
@@ -19,6 +20,7 @@ db = PostgresEngine(
         password=settings.DB_PASS,
     )
 )
+dbtransaction_wrapper = dbtransaction(db)
 
 
 class Book(BaseTable, db=db):
@@ -43,25 +45,22 @@ def teardown_module():
 
 
 async def add_with_tr():
-    async with dbtransaction_ctx(db):
-        name = "The Pillars of the Earth"
-        await _add_book(name)
+    add_book = dbtransaction_wrapper(_add_book)
+    name = "The Pillars of the Earth"
+    await add_book(name)
     names = [b[Book.name] for b in await Book.select().run()]
     assert name in names
 
-    try:
-        async with dbtransaction_ctx(db):
-            name = "The Cathedral and the Bazaar"
-            await _add_book_loser(name)
-    except NameError:
-        pass
-
+    add_book_loser = dbtransaction_wrapper(_add_book_loser)
+    name = "The Cathedral and the Bazaar"
+    with pytest.raises(NameError):
+        await add_book_loser(name)
     names = [b[Book.name] for b in await Book.select().run()]
     assert name not in names
 
-    async with dbtransaction_ctx(db):
-        name = "The Ego Trick"
-        await _add_book(name)
+    add_book = dbtransaction_wrapper(_add_book)
+    name = "The Ego Trick"
+    await add_book(name)
     names = [b[Book.name] for b in await Book.select().run()]
     assert name in names
 
