@@ -2,6 +2,12 @@
 History
 =======
 
+0.97.0 (2025-02-18)
+-------------------
+* Added async cached models.
+* Added async session handling for FastAPI.
+* Added skip_dbtransaction option for endpoints.
+
 0.96.4 (2025-01-10)
 -------------------
 * Fixed peewee dbtransaction pool for fastapi.
