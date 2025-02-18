@@ -211,7 +211,7 @@ class SecureRouter(APIRoute):
     sessions = None
 
     @classmethod
-    def setup_ssessions(cls, sessions: SessionDBHandler):
+    def setup_sessions(cls, sessions: SessionDBHandler):
         cls.sessions = sessions
 
     def get_route_handler(self):
@@ -285,7 +285,7 @@ class Router(APIRoute):
     sessions = None
 
     @classmethod
-    def setup_ssessions(cls, sessions: SessionDBHandler):
+    def setup_sessions(cls, sessions: SessionDBHandler):
         cls.sessions = sessions
 
     def get_route_handler(self):
@@ -399,8 +399,8 @@ class APIFactory:
                            (host, port, password, db)
         """
         self.sessions = SessionDBHandler(sessiondb_conn)
-        Router.setup_ssessions(self.sessions)
-        SecureRouter.setup_ssessions(self.sessions)
+        Router.setup_sessions(self.sessions)
+        SecureRouter.setup_sessions(self.sessions)
 
         def access_wrapper(f):
             """
