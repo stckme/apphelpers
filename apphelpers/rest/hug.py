@@ -414,9 +414,12 @@ class APIFactory:
             f"{method_args[0]}",
             f"[{method.__name__.upper()}] => {f.__module__}:{f.__name__}",
         )
+        db_tr_wrapper = (
+            phony if getattr(f, "skip_dbtransaction", False) else self.db_tr_wrapper
+        )
         m = method(*method_args, **method_kw)
         f = self.access_wrapper(
-            self.honeybadger_wrapper(self.db_tr_wrapper(raise_not_found_on_none(f)))
+            self.honeybadger_wrapper(db_tr_wrapper(raise_not_found_on_none(f)))
         )
         # NOTE: ^ wrapper ordering is important. access_wrapper needs request which
         # others don't. If access_wrapper comes late in the order it won't be passed
