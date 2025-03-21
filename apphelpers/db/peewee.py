@@ -33,13 +33,21 @@ class URLField(Field):
 
 
 def create_pgdb_pool(
-    host=None, database=None, user=None, password=None, max_connections=32
+    host=None,
+    database=None,
+    user=None,
+    password=None,
+    port=None,
+    sslmode=None,
+    max_connections=32,
 ):
     return PooledPostgresqlExtDatabase(
         database=database,
         host=host,
         user=user,
         password=password,
+        port=port,
+        sslmode=sslmode,
         max_connections=max_connections,
         register_hstore=False,
         stale_timeout=60 * 2,
