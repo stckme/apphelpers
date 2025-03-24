@@ -28,7 +28,7 @@ def build_app_logger(name="app", logfile="app.log", debug=True, rotate=False):
     General purpose application logger. Useful mainly for debugging
     """
     level = logging.DEBUG if settings.DEBUG else logging.INFO
-    logdir = "logs"  # TODO: move this to settings
+    logdir = getattr(getattr(settings, "APP_LOGGER", None), "LOGDIR", "logs")
     if not os.path.exists(logdir):
         os.mkdir(logdir)
     logpath = os.path.join(logdir, logfile)
