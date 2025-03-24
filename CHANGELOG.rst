@@ -2,6 +2,11 @@
 History
 =======
 
+0.97.1 (2025-03-24)
+-------------------
+* Added argument `port` and `sslmode` to peewee.create_pgdb_pool
+* Added support for settings.APP_LOGGER.LOGDIR
+
 0.97.0 (2025-02-18)
 -------------------
 * Added async cached models.
