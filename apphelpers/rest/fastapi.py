@@ -415,7 +415,7 @@ class APIFactory:
             self.enable_multi_site(site_identifier)
         if sessiondb_conn:
             self.setup_session_db(sessiondb_conn)
-        
+
         self.router = APIRouter(route_class=Router)
         self.secure_router = APIRouter(route_class=SecureRouter)
         self.secure_by_cookie_or_header_router = APIRouter(
@@ -423,7 +423,7 @@ class APIFactory:
         )
         self.setup_auth_header(auth_header_name)
         self.setup_auth_cookie(auth_cookie_name)
-        
+
     def enable_multi_site(self, site_identifier: str):
         self.multi_site_enabled = True
         self.site_identifier = site_identifier
@@ -453,7 +453,7 @@ class APIFactory:
         Router.set_auth_header_name(auth_header_name)
         SecureRouter.set_auth_header_name(auth_header_name)
         SecureByCookieOrHeaderRouter.set_auth_header_name(auth_header_name)
-    
+
     def setup_auth_cookie(self, auth_cookie_name: str):
         SecureByCookieOrHeaderRouter.set_auth_cookie_name(auth_cookie_name)
 

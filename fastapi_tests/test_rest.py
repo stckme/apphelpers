@@ -76,7 +76,9 @@ class TestRest:
         response = await client.post(url, json={"word": word})
         assert response.json()["word"] == word
 
-    async def test_secure_echo(self, client: httpx.AsyncClient, sessionsdb: sessionslib.SessionDBHandler):
+    async def test_secure_echo(
+        self, client: httpx.AsyncClient, sessionsdb: sessionslib.SessionDBHandler
+    ):
         word = "hello"
         headers = {"NoAuthorization": "Header"}
         url = secure_echo_url + "/" + word
@@ -138,7 +140,6 @@ class TestRest:
         data = {"uid": uid}
         resp = await client.post(url, json=data, headers=headers)
         assert resp.json() == data["uid"]
-
 
     async def test_group_access(
         self, client: httpx.AsyncClient, sessionsdb: sessionslib.SessionDBHandler
