@@ -76,12 +76,28 @@ class TestRest:
         response = await client.post(url, json={"word": word})
         assert response.json()["word"] == word
 
-    async def test_secure_echo(self, client: httpx.AsyncClient):
+    async def test_secure_echo(
+        self, client: httpx.AsyncClient, sessionsdb: sessionslib.SessionDBHandler
+    ):
         word = "hello"
         headers = {"NoAuthorization": "Header"}
         url = secure_echo_url + "/" + word
         resp = await client.get(url, headers=headers)
         assert resp.status_code == 401
+
+        uid = 10000
+        d = dict(uid=uid, groups=[])
+        sid = await sessionsdb.create(**d)
+
+        headers = {"Authorization": sid}
+        resp = await client.get(url, headers=headers)
+        assert resp.status_code == 200
+        assert resp.json() == ("%s:%s" % (uid, word))
+
+        cookies = {"__s": sid}
+        resp = await client.get(url, cookies=cookies)
+        assert resp.status_code == 200
+        assert resp.json() == ("%s:%s" % (uid, word))
 
     async def test_user_id(
         self, client: httpx.AsyncClient, sessionsdb: sessionslib.SessionDBHandler
@@ -103,7 +119,21 @@ class TestRest:
         resp = await client.post(url, json=data, headers=headers)
         assert resp.json() == data["uid"]
 
-        data = {"uid": 1}  # invalid claim
+        data = {"uid": 1}
+        resp = await client.post(url, json=data, headers=headers)
+        assert resp.json() == data["uid"]
+
+        data = {"uid": uid}
+        resp = await client.post(url, json=data, headers=headers)
+        assert resp.json() == data["uid"]
+
+        url = base_url + "me/uid-unpacked"
+
+        data = {"uid": None}
+        resp = await client.post(url, json=data, headers=headers)
+        assert resp.json() == data["uid"]
+
+        data = {"uid": 1}
         resp = await client.post(url, json=data, headers=headers)
         assert resp.json() == data["uid"]
 

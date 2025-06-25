@@ -3,7 +3,7 @@ from functools import wraps
 from typing import Annotated
 
 from converge import settings
-from fastapi import APIRouter, Depends, Header
+from fastapi import APIRouter, Depends, Header, Body, Query
 from fastapi.routing import APIRoute
 from starlette.requests import Request
 
@@ -194,25 +194,57 @@ async def get_user_ip(request: Request):
     return request.headers["X-FORWARDED-FOR"]
 
 
-user = Annotated[User, Depends(get_current_user)]
-user_id = Annotated[int, Depends(get_current_user_id)]
-user_name = Annotated[str, Depends(get_current_user_name)]
-user_email = Annotated[str, Depends(get_current_user_email)]
-user_mobile = Annotated[str, Depends(get_current_user_mobile)]
-domain = Annotated[str, Depends(get_current_domain)]
 raw_body = Annotated[bytes, Depends(get_raw_body)]
 json_body = Annotated[dict, Depends(get_json_body)]
-user_agent = Annotated[str, Depends(get_user_agent)]
-user_ip = Annotated[str, Depends(get_user_ip)]
-header = Annotated[str, Header()]
+
+
+class RequestHeaders:
+    user_agent = Annotated[str, Depends(get_user_agent)]
+    user_ip = Annotated[str, Depends(get_user_ip)]
+    domain = Annotated[str, Depends(get_current_domain)]
+    custom = Annotated[str, Header()]
+
+
+class AuthParams:
+    user = Annotated[User, Depends(get_current_user)]
+    user_id = Annotated[int, Depends(get_current_user_id)]
+    user_name = Annotated[str, Depends(get_current_user_name)]
+    user_email = Annotated[str, Depends(get_current_user_email)]
+    user_mobile = Annotated[str, Depends(get_current_user_mobile)]
+
+
+class QueryParams:
+    list_of_str = Annotated[list[str], Query()]
+    list_of_int = Annotated[list[int], Query()]
+
+
+class BodyParams:
+    str = Annotated[str, Body(embed=True)]
+    int = Annotated[int, Body(embed=True)]
+    float = Annotated[float, Body(embed=True)]
+    bool = Annotated[bool, Body(embed=True)]
+    dict = Annotated[dict, Body(embed=True)]
+    list_of_str = Annotated[list[str], Body(embed=True)]
+    list_of_int = Annotated[list[int], Body(embed=True)]
+    list_of_float = Annotated[list[float], Body(embed=True)]
+    list_of_bool = Annotated[list[bool], Body(embed=True)]
+    list_of_dict = Annotated[list[dict], Body(embed=True)]
 
 
 class SecureRouter(APIRoute):
     sessions = None
+    auth_header_name = None
 
     @classmethod
     def setup_sessions(cls, sessions: SessionDBHandler):
         cls.sessions = sessions
+
+    @classmethod
+    def set_auth_header_name(cls, name: str):
+        cls.auth_header_name = name
+
+    def extract_auth_token(self, _request: Request):
+        return _request.headers.get(self.auth_header_name)
 
     def get_route_handler(self):
         original_route_handler = super().get_route_handler()
@@ -228,7 +260,7 @@ class SecureRouter(APIRoute):
                 None,
             )
 
-            token = _request.headers.get("Authorization")
+            token = self.extract_auth_token(_request)
             if token:
                 session = await self.sessions.get(  # type: ignore
                     token,
@@ -281,15 +313,22 @@ class SecureRouter(APIRoute):
         return custom_route_handler
 
 
-class Router(APIRoute):
-    sessions = None
+class SecureByCookieOrHeaderRouter(SecureRouter):
+    auth_cookie_name = None
 
     @classmethod
-    def setup_sessions(cls, sessions: SessionDBHandler):
-        cls.sessions = sessions
+    def set_auth_cookie_name(cls, cookie_name: str):
+        cls.auth_cookie_name = cookie_name
 
+    def extract_auth_token(self, _request: Request):
+        return _request.cookies.get(self.auth_cookie_name) or _request.headers.get(
+            self.auth_header_name
+        )
+
+
+class Router(SecureRouter):
     def get_route_handler(self):
-        original_route_handler = super().get_route_handler()
+        original_route_handler = super(SecureRouter, self).get_route_handler()
 
         async def custom_route_handler(_request: Request):
             uid, groups, name, email, mobile, site_groups, site_ctx = (
@@ -302,7 +341,7 @@ class Router(APIRoute):
                 None,
             )
 
-            token = _request.headers.get("Authorization")
+            token = self.extract_auth_token(_request)
             if token:
                 try:
                     session = await self.sessions.get(  # type: ignore
@@ -358,7 +397,14 @@ class Router(APIRoute):
 
 
 class APIFactory:
-    def __init__(self, sessiondb_conn=None, urls_prefix="", site_identifier=None):
+    def __init__(
+        self,
+        sessiondb_conn=None,
+        urls_prefix="",
+        site_identifier=None,
+        auth_header_name="Authorization",
+        auth_cookie_name="__s",
+    ):
         self.access_wrapper = phony
         self.multi_site_enabled = False
         self.site_identifier = site_identifier
@@ -369,8 +415,14 @@ class APIFactory:
             self.enable_multi_site(site_identifier)
         if sessiondb_conn:
             self.setup_session_db(sessiondb_conn)
+
         self.router = APIRouter(route_class=Router)
         self.secure_router = APIRouter(route_class=SecureRouter)
+        self.secure_by_cookie_or_header_router = APIRouter(
+            route_class=SecureByCookieOrHeaderRouter
+        )
+        self.setup_auth_header(auth_header_name)
+        self.setup_auth_cookie(auth_cookie_name)
 
     def enable_multi_site(self, site_identifier: str):
         self.multi_site_enabled = True
@@ -381,6 +433,10 @@ class APIFactory:
             self.db_tr_wrapper = dbtransaction(db)
         else:
             self.router.dependencies.append(dbtransaction(db))
+            self.secure_router.dependencies.append(dbtransaction(db))
+            self.secure_by_cookie_or_header_router.dependencies.append(
+                dbtransaction(db)
+            )
 
     def setup_honeybadger_monitoring(self):
         api_key = settings.HONEYBADGER_API_KEY
@@ -393,6 +449,14 @@ class APIFactory:
         hb.configure(api_key=api_key)
         self.honeybadger_wrapper = honeybadger_wrapper(hb)
 
+    def setup_auth_header(self, auth_header_name: str):
+        Router.set_auth_header_name(auth_header_name)
+        SecureRouter.set_auth_header_name(auth_header_name)
+        SecureByCookieOrHeaderRouter.set_auth_header_name(auth_header_name)
+
+    def setup_auth_cookie(self, auth_cookie_name: str):
+        SecureByCookieOrHeaderRouter.set_auth_cookie_name(auth_cookie_name)
+
     def setup_session_db(self, sessiondb_conn):
         """
         redis_conn_params: dict() with below keys
@@ -401,6 +465,7 @@ class APIFactory:
         self.sessions = SessionDBHandler(sessiondb_conn)
         Router.setup_sessions(self.sessions)
         SecureRouter.setup_sessions(self.sessions)
+        SecureByCookieOrHeaderRouter.setup_sessions(self.sessions)
 
         def access_wrapper(f):
             """
@@ -471,12 +536,11 @@ class APIFactory:
             """
             This is the authentication + authorization part
             """
-
-            login_required = getattr(f, "login_required", None)
-            any_group_required = getattr(f, "any_group_required", None)
-            all_groups_required = getattr(f, "all_groups_required", None)
-            groups_forbidden = getattr(f, "groups_forbidden", None)
-            authorizer = getattr(f, "authorizer", None)
+            login_required = getattr(f, "login_required", False)
+            any_group_required = getattr(f, "any_group_required", False)
+            all_groups_required = getattr(f, "all_groups_required", False)
+            groups_forbidden = getattr(f, "groups_forbidden", False)
+            authorizer = getattr(f, "authorizer", False)
 
             if (
                 login_required
@@ -553,8 +617,14 @@ class APIFactory:
         )
 
     def choose_router(self, f):
-        login_required = getattr(f, "login_required", None) is True
-        return self.secure_router if login_required else self.router
+        if getattr(f, "login_required", False):
+            return (
+                self.secure_by_cookie_or_header_router
+                if getattr(f, "auth_by_cookie_or_header", False)
+                else self.secure_router
+            )
+        else:
+            return self.router
 
     def build(self, method, method_args, method_kw, f):
         module = f.__module__.split(".")[-1].strip("_")
@@ -663,5 +733,5 @@ class APIFactory:
 
 
 @ep.login_required
-def whoami(user: User = user):
+def whoami(user: User = AuthParams.user):
     return user.to_dict()

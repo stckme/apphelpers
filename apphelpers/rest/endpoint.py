@@ -8,10 +8,18 @@ def login_required(func):
     return func
 
 
+def auth_by_cookie_or_header(func):
+    """Auth token can be provided by cookie or header."""
+
+    func.auth_by_cookie_or_header = True
+    return func
+
+
 def any_group_required(*groups):
     """Any of the mentioned groups is required."""
 
     def decorator(func):
+        func.login_required = True
         func.any_group_required = set(groups)
         return func
 
@@ -22,6 +30,7 @@ def all_groups_required(*groups):
     """All of the mentioned groups are required."""
 
     def decorator(func):
+        func.login_required = True
         func.all_groups_required = set(groups)
         return func
 
@@ -32,6 +41,7 @@ def groups_forbidden(*groups):
     """None of the mentioned groups are allowed."""
 
     def decorator(func):
+        func.login_required = True
         func.groups_forbidden = set(groups)
         return func
 
@@ -42,6 +52,7 @@ def authorizer(authorizer):
     """Custom the authorizer for this endpoint."""
 
     def decorator(func):
+        func.login_required = True
         func.authorizer = authorizer
         return func
 
@@ -50,7 +61,7 @@ def authorizer(authorizer):
 
 def ignore_site_ctx(func):
     """Ignore site context for this endpoint."""
-
+    func.login_required = True
     func.ignore_site_ctx = True
     return func
 

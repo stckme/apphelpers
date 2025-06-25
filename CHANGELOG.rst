@@ -2,6 +2,11 @@
 History
 =======
 
+0.98.0 (2025-06-19)
+-------------------
+* Authentication by cookie or header for FastAPI
+* Unpacking POST/PUT request body for FastAPI
+
 0.97.1 (2025-03-24)
 -------------------
 * Added argument `port` and `sslmode` to peewee.create_pgdb_pool

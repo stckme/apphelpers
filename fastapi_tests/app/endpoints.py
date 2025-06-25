@@ -4,40 +4,41 @@ from fastapi import Query
 from pydantic import BaseModel
 
 from apphelpers.rest import endpoint as ep
-from apphelpers.rest.fastapi import header, json_body, user, user_agent, user_id
+from apphelpers.rest.fastapi import RequestHeaders, json_body, AuthParams, BodyParams
 from fastapi_tests.app.models import Book
 
 
-def echo(word, user: user):
+def echo(word, user: AuthParams.user):
     return "%s:%s" % (user.id, word) if user else word
 
 
-async def echo_async(word, user: user):
+async def echo_async(word, user: AuthParams.user):
     return "%s:%s" % (user.id, word) if user else word
 
 
-def echo_post(data: json_body, user: user):
+def echo_post(data: json_body, user: AuthParams.user):
     return "%s:%s" % (user.id, data) if user else data
 
 
-def echo_header(x_key: header):
+def echo_header(x_key: RequestHeaders.custom):
     return x_key
 
 
 @ep.login_required
-def secure_echo(word, user_id: user_id):
+@ep.auth_by_cookie_or_header
+def secure_echo(word, user_id: AuthParams.user_id):
     return "%s:%s" % (user_id, word) if user_id else word
 
 
 @ep.groups_forbidden("noaccess-group")
 @ep.all_groups_required("access-group")
-def echo_groups(user: user):
+def echo_groups(user: AuthParams.user):
     return user.groups
 
 
 @ep.groups_forbidden("noaccess-group")
 @ep.all_groups_required("access-group")
-async def echo_groups_async(user: user):
+async def echo_groups_async(user: AuthParams.user):
     return user.groups
 
 
@@ -48,6 +49,11 @@ def add(nums):
 @ep.login_required
 def get_my_uid(body: json_body):
     return body["uid"]
+
+
+@ep.login_required
+def get_my_uid_unpacked(uid: BodyParams.int = None):
+    return uid
 
 
 @ep.login_required
@@ -66,24 +72,24 @@ async def get_snake_async(name=None):
 
 @ep.all_groups_required("access-group")
 @ep.groups_forbidden("noaccess-group")
-def echo_site_groups(site_id: int, user: user):
+def echo_site_groups(site_id: int, user: AuthParams.user):
     return user.site_groups[site_id]
 
 
 @ep.all_groups_required("access-group")
 @ep.groups_forbidden("noaccess-group")
-async def echo_site_groups_async(site_id: int, user: user):
+async def echo_site_groups_async(site_id: int, user: AuthParams.user):
     return user.site_groups[site_id]
 
 
 @ep.login_required
-async def echo_user_agent_async(user_agent: user_agent):
+async def echo_user_agent_async(user_agent: RequestHeaders.user_agent):
     return user_agent
 
 
 @ep.login_required
 @ep.ignore_site_ctx
-async def echo_user_agent_without_site_ctx_async(user_agent: user_agent):
+async def echo_user_agent_without_site_ctx_async(user_agent: RequestHeaders.user_agent):
     return user_agent
 
 
@@ -123,6 +129,7 @@ def setup_routes(factory):
     factory.get("/echo-groups-async")(echo_groups_async)
 
     factory.post("/me/uid")(get_my_uid)
+    factory.post("/me/uid-unpacked")(get_my_uid_unpacked)
 
     factory.get("/snakes/{name}")(get_snake)
     factory.get("/snakes-async/{name}")(get_snake_async)
