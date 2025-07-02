@@ -2,6 +2,11 @@
 History
 =======
 
+0.98.1 (2025-07-02)
+-------------------
+* Fixed access wrapper failure if site_id is None
+* Fixed requirement of `/` in the end of collection url
+
 0.98.0 (2025-06-19)
 -------------------
 * Authentication by cookie or header for FastAPI

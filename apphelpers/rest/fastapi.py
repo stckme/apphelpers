@@ -408,9 +408,12 @@ class APIFactory:
         self.access_wrapper = phony
         self.multi_site_enabled = False
         self.site_identifier = site_identifier
-        self.urls_prefix = urls_prefix
+        self.urls_prefix = urls_prefix.rstrip("/")
         self.db_tr_wrapper = phony
         self.honeybadger_wrapper = phony
+
+        self.sessions = None
+        self.sessiondb_conn = sessiondb_conn
         if site_identifier:
             self.enable_multi_site(site_identifier)
         if sessiondb_conn:
@@ -427,6 +430,9 @@ class APIFactory:
     def enable_multi_site(self, site_identifier: str):
         self.multi_site_enabled = True
         self.site_identifier = site_identifier
+        if self.sessions:
+            # if sessions are already set up, we need to reconfigure them
+            self.setup_session_db(self.sessiondb_conn)
 
     def setup_db_transaction(self, db):
         if peewee_enabled:
@@ -555,7 +561,7 @@ class APIFactory:
                     user: User = _request.state.user
                     site_id = (
                         int(kw[self.site_identifier])
-                        if self.site_identifier in kw
+                        if kw.get(self.site_identifier) is not None
                         else None
                     )
 
@@ -666,7 +672,10 @@ class APIFactory:
     def get(self, path, *a, **k):
         def _wrapper(f):
             router = self.choose_router(f)
-            args = (path if path.startswith("/") else (self.urls_prefix + path),) + a
+            full_path = (
+                path if path.startswith("/") else f"{self.urls_prefix}/{path}"
+            ).rstrip("/")
+            args = (full_path,) + a
             return self.build(router.get, args, k, f)
 
         return _wrapper
@@ -674,7 +683,10 @@ class APIFactory:
     def post(self, path, *a, **k):
         def _wrapper(f):
             router = self.choose_router(f)
-            args = (path if path.startswith("/") else (self.urls_prefix + path),) + a
+            full_path = (
+                path if path.startswith("/") else f"{self.urls_prefix}/{path}"
+            ).rstrip("/")
+            args = (full_path,) + a
             return self.build(router.post, args, k, f)
 
         return _wrapper
@@ -682,7 +694,10 @@ class APIFactory:
     def put(self, path, *a, **k):
         def _wrapper(f):
             router = self.choose_router(f)
-            args = (path if path.startswith("/") else (self.urls_prefix + path),) + a
+            full_path = (
+                path if path.startswith("/") else f"{self.urls_prefix}/{path}"
+            ).rstrip("/")
+            args = (full_path,) + a
             return self.build(router.put, args, k, f)
 
         return _wrapper
@@ -690,7 +705,10 @@ class APIFactory:
     def patch(self, path, *a, **k):
         def _wrapper(f):
             router = self.choose_router(f)
-            args = (path if path.startswith("/") else (self.urls_prefix + path),) + a
+            full_path = (
+                path if path.startswith("/") else f"{self.urls_prefix}/{path}"
+            ).rstrip("/")
+            args = (full_path,) + a
             return self.build(router.patch, args, k, f)
 
         return _wrapper
@@ -698,7 +716,10 @@ class APIFactory:
     def delete(self, path, *a, **k):
         def _wrapper(f):
             router = self.choose_router(f)
-            args = (path if path.startswith("/") else (self.urls_prefix + path),) + a
+            full_path = (
+                path if path.startswith("/") else f"{self.urls_prefix}/{path}"
+            ).rstrip("/")
+            args = (full_path,) + a
             return self.build(router.delete, args, k, f)
 
         return _wrapper
@@ -707,7 +728,8 @@ class APIFactory:
         if resource:
             raise NotImplementedError("Resource not supported yet")
 
-        resource_url = collection_url + "{" + id_field + "}"
+        collection_url = collection_url.rstrip("/")
+        resource_url = f"{collection_url}/{{{id_field}}}"
         assert isinstance(handlers, (list, tuple)), "handlers should be list or tuple"
         (
             get_collection,
