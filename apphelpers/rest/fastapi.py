@@ -3,7 +3,7 @@ from functools import wraps
 from typing import Annotated
 
 from converge import settings
-from fastapi import APIRouter, Depends, Header, Body, Query
+from fastapi import APIRouter, Depends, Header, Body, File, Query
 from fastapi.routing import APIRoute
 from starlette.requests import Request
 
@@ -221,6 +221,7 @@ class QueryParams:
 class BodyParams:
     str = Annotated[str, Body(embed=True)]
     int = Annotated[int, Body(embed=True)]
+    file = Annotated[bytes, File()]
     float = Annotated[float, Body(embed=True)]
     bool = Annotated[bool, Body(embed=True)]
     dict = Annotated[dict, Body(embed=True)]

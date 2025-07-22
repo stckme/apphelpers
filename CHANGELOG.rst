@@ -2,6 +2,10 @@
 History
 =======
 
+0.98.2 (2025-07-22)
+-------------------
+* Added `file` type to BodyParams for FastAPI
+
 0.98.1 (2025-07-02)
 -------------------
 * Fixed access wrapper failure if site_id is None
