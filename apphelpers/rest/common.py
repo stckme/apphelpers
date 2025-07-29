@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 from dataclasses import asdict, dataclass, field
 from typing import Dict, List, Optional
 
@@ -39,7 +40,7 @@ def notify_honeybadger(honeybadger, error, func, args, kwargs):
             context={
                 "func": func.__name__,
                 "args": args,
-                "kwargs": filter_dict(kwargs, settings.HB_PARAM_FILTERS),
+                "kwargs": filter_dict(copy.deepcopy(kwargs), settings.HB_PARAM_FILTERS),
             },
         )
     except HTTPError as e:

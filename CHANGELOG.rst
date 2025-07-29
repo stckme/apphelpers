@@ -2,6 +2,10 @@
 History
 =======
 
+0.98.3 (2025-07-29)
+-------------------
+* Fixed honeybadger modification of kwargs
+
 0.98.2 (2025-07-22)
 -------------------
 * Added `file` type to BodyParams for FastAPI
