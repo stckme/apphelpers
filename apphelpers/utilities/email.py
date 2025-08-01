@@ -95,7 +95,8 @@ def send_email(
     if settings.DEBUG or settings.APP_MODE != "prod":
         # Make sure that we don't send emails to external emails in dev/stage
         filtered_recipients = []
-        for recpt in recipients + (bcc or []):
+        all_recipients = (tuple(recipients) + tuple(bcc)) if bcc else recipients
+        for recpt in all_recipients:
             if isinstance(recpt, (list, tuple)):
                 _, email = recpt
             else:

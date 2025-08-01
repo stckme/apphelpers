@@ -2,6 +2,11 @@
 History
 =======
 
+0.98.4 (2025-08-01)
+-------------------
+* Added `bytes` type to BodyParams for FastAPI
+* Fixed send_email bcc recipients type
+
 0.98.3 (2025-07-29)
 -------------------
 * Fixed honeybadger modification of kwargs

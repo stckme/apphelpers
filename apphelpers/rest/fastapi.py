@@ -225,6 +225,7 @@ class BodyParams:
     float = Annotated[float, Body(embed=True)]
     bool = Annotated[bool, Body(embed=True)]
     dict = Annotated[dict, Body(embed=True)]
+    bytes = Annotated[bytes, Body(embed=True)]
     list_of_str = Annotated[list[str], Body(embed=True)]
     list_of_int = Annotated[list[int], Body(embed=True)]
     list_of_float = Annotated[list[float], Body(embed=True)]
