@@ -9,8 +9,7 @@ class BaseError(HTTPException):
     # Whether to report this error to honeybadger
     report: ClassVar[bool] = True
     status_code: ClassVar[int] = status.HTTP_500_INTERNAL_SERVER_ERROR
-
-    detail: str = "Something went wrong"
+    detail: ClassVar[str] = "Something went wrong"
 
 
 @dataclass

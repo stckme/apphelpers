@@ -2,6 +2,11 @@
 History
 =======
 
+0.98.5 (2025-08-04)
+-------------------
+* Fixed raw_body directive for FastAPI
+* Fixed extending BaseError.detail in FastAPI errors
+
 0.98.4 (2025-08-01)
 -------------------
 * Added `bytes` type to BodyParams for FastAPI

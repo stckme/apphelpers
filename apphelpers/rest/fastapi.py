@@ -183,7 +183,7 @@ async def get_json_body(request: Request):
 
 
 async def get_raw_body(request: Request):
-    return request.body()
+    return await request.body()
 
 
 async def get_user_agent(request: Request):
