@@ -3,7 +3,7 @@ from functools import wraps
 from typing import Annotated
 
 from converge import settings
-from fastapi import APIRouter, Depends, Header, Body, File, Query
+from fastapi import APIRouter, Depends, Header, Body, File, Query, Form
 from fastapi.routing import APIRoute
 from starlette.requests import Request
 
@@ -231,6 +231,15 @@ class BodyParams:
     list_of_float = Annotated[list[float], Body(embed=True)]
     list_of_bool = Annotated[list[bool], Body(embed=True)]
     list_of_dict = Annotated[list[dict], Body(embed=True)]
+
+
+class FormParams:
+    str = Annotated[str, Form()]
+    int = Annotated[int, Form()]
+    file = Annotated[bytes, File()]
+    float = Annotated[float, Form()]
+    bool = Annotated[bool, Form()]
+    bytes = Annotated[bytes, Form()]
 
 
 class SecureRouter(APIRoute):
@@ -485,13 +494,7 @@ class APIFactory:
             groups_forbidden = getattr(f, "groups_forbidden", None)
             authorizer = getattr(f, "authorizer", None)
 
-            if (
-                login_required
-                or any_group_required
-                or all_groups_required
-                or groups_forbidden
-                or authorizer
-            ):
+            if login_required:
 
                 @wraps(f)
                 async def wrapper(_request, *args, **kw):
@@ -550,13 +553,7 @@ class APIFactory:
             groups_forbidden = getattr(f, "groups_forbidden", False)
             authorizer = getattr(f, "authorizer", False)
 
-            if (
-                login_required
-                or any_group_required
-                or all_groups_required
-                or groups_forbidden
-                or authorizer
-            ):
+            if login_required:
 
                 @wraps(f)
                 async def wrapper(_request, *args, **kw):
@@ -625,12 +622,12 @@ class APIFactory:
         )
 
     def choose_router(self, f):
-        if getattr(f, "login_required", False):
-            return (
-                self.secure_by_cookie_or_header_router
-                if getattr(f, "auth_by_cookie_or_header", False)
-                else self.secure_router
-            )
+        if getattr(f, "auth_by_cookie_or_header", False):
+            return self.secure_by_cookie_or_header_router
+
+        elif getattr(f, "login_required", False):
+            return self.secure_router
+
         else:
             return self.router
 
