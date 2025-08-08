@@ -2,6 +2,11 @@
 History
 =======
 
+0.99.0 (2025-08-07)
+-------------------
+* Added FormParams support for FastAPI
+* Fixed auth_by_cookie_or_header
+
 0.98.5 (2025-08-04)
 -------------------
 * Fixed raw_body directive for FastAPI
