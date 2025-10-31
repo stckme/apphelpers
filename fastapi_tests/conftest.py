@@ -4,13 +4,16 @@ Common pytest fixtures can be defines here.
 See https://docs.pytest.org/en/latest/reference/fixtures.html
 """
 
-import asyncio
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 import settings
 from apphelpers.async_sessions import SessionDBHandler
 
+from build.lib.apphelpers.db.piccolo import (
+    destroy_db_from_basetable,
+    setup_db_from_basetable,
+)
 from fastapi_tests import service
 
 
@@ -22,18 +25,6 @@ sessiondb_conn = dict(
 )
 
 
-@pytest.fixture(scope="module")
-def anyio_backend():
-    return "asyncio"
-
-
-@pytest.fixture
-def event_loop():
-    loop = asyncio.get_event_loop()
-    yield loop
-    loop.close()
-
-
 @pytest.fixture
 async def sessionsdb():
     sessionsdb = SessionDBHandler(sessiondb_conn)
@@ -41,9 +32,20 @@ async def sessionsdb():
     await sessionsdb.close()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 async def client():
     async with AsyncClient(
         transport=ASGITransport(app=service.app), base_url="http://test"
     ) as ac:
         yield ac
+
+
+@pytest.fixture(scope="session", autouse=True)
+async def setup():
+    from apphelpers.db.piccolo import destroy_db_from_basetable, setup_db_from_basetable
+    from fastapi_tests.app.models import BaseTable
+
+    sessionsdb = SessionDBHandler(sessiondb_conn)
+    await sessionsdb.destroy_all()
+    destroy_db_from_basetable(BaseTable)
+    setup_db_from_basetable(BaseTable)
