@@ -435,6 +435,14 @@ class APIFactory:
         self.secure_by_cookie_or_header_router = APIRouter(
             route_class=SecureByCookieOrHeaderRouter
         )
+        if peewee_enabled is False:
+            self.router_without_dbtransaction = APIRouter(route_class=Router)
+            self.secure_router_without_dbtransaction = APIRouter(
+                route_class=SecureRouter
+            )
+            self.secure_by_cookie_or_header_router_without_dbtransaction = APIRouter(
+                route_class=SecureByCookieOrHeaderRouter
+            )
         self.setup_auth_header(auth_header_name)
         self.setup_auth_cookie(auth_cookie_name)
 
@@ -622,7 +630,20 @@ class APIFactory:
         )
 
     def choose_router(self, f):
-        if getattr(f, "auth_by_cookie_or_header", False):
+        skip_dbtransaction = (
+            getattr(f, "skip_dbtransaction", False) and peewee_enabled is False
+        )
+
+        if skip_dbtransaction and getattr(f, "auth_by_cookie_or_header", False):
+            return self.secure_by_cookie_or_header_router_without_dbtransaction
+
+        elif skip_dbtransaction and getattr(f, "login_required", False):
+            return self.secure_router_without_dbtransaction
+
+        elif skip_dbtransaction:
+            return self.router_without_dbtransaction
+
+        elif getattr(f, "auth_by_cookie_or_header", False):
             return self.secure_by_cookie_or_header_router
 
         elif getattr(f, "login_required", False):
@@ -636,7 +657,9 @@ class APIFactory:
         name = f.__name__.strip("_")
         response_model = getattr(f, "response_model", None)
         db_tr_wrapper = (
-            phony if getattr(f, "skip_dbtransaction", False) else self.db_tr_wrapper
+            phony
+            if peewee_enabled is False or getattr(f, "skip_dbtransaction", False)
+            else self.db_tr_wrapper
         )
 
         if "operation_id" not in method_kw:
