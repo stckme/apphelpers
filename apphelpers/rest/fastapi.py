@@ -436,6 +436,8 @@ class APIFactory:
             route_class=SecureByCookieOrHeaderRouter
         )
         if peewee_enabled is False:
+            # when piccolo is used, dbtransaction is handled as dependency
+            # so we need separate routers without dbtransaction wrapper
             self.router_without_dbtransaction = APIRouter(route_class=Router)
             self.secure_router_without_dbtransaction = APIRouter(
                 route_class=SecureRouter
@@ -457,6 +459,7 @@ class APIFactory:
         if peewee_enabled:
             self.db_tr_wrapper = dbtransaction(db)
         else:
+            # for piccolo, we need to add dependency to routers
             self.router.dependencies.append(dbtransaction(db))
             self.secure_router.dependencies.append(dbtransaction(db))
             self.secure_by_cookie_or_header_router.dependencies.append(
