@@ -435,8 +435,30 @@ class APIFactory:
         self.secure_by_cookie_or_header_router = APIRouter(
             route_class=SecureByCookieOrHeaderRouter
         )
+        # For piccolo, dbtransaction is handled as dependency, we need separate
+        # routers with dbtransaction dependency if setup_db_transaction is called
+        self.router_with_dbtransaction = None
+        self.secure_router_with_dbtransaction = None
+        self.secure_by_cookie_or_header_router_with_dbtransaction = None
+
         self.setup_auth_header(auth_header_name)
         self.setup_auth_cookie(auth_cookie_name)
+
+    def list_routers(self) -> list[APIRouter]:
+        # NOTE Here order of router inclusion is important.
+        # The secure router should be included before the router.
+        return [
+            router
+            for router in (
+                self.secure_router,
+                self.secure_router_with_dbtransaction,
+                self.secure_by_cookie_or_header_router,
+                self.secure_by_cookie_or_header_router_with_dbtransaction,
+                self.router,
+                self.router_with_dbtransaction,
+            )
+            if router is not None
+        ]
 
     def enable_multi_site(self, site_identifier: str):
         self.multi_site_enabled = True

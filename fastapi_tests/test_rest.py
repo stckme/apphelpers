@@ -94,8 +94,9 @@ class TestRest:
         assert resp.status_code == 200
         assert resp.json() == ("%s:%s" % (uid, word))
 
-        cookies = {"__s": sid}
-        resp = await client.get(url, cookies=cookies)
+        client.cookies.set("__s", sid)
+        resp = await client.get(url)
+        client.cookies.delete("__s")
         assert resp.status_code == 200
         assert resp.json() == ("%s:%s" % (uid, word))
 
