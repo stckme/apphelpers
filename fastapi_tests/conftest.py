@@ -9,11 +9,6 @@ from httpx import ASGITransport, AsyncClient
 
 import settings
 from apphelpers.async_sessions import SessionDBHandler
-
-from build.lib.apphelpers.db.piccolo import (
-    destroy_db_from_basetable,
-    setup_db_from_basetable,
-)
 from fastapi_tests import service
 
 
