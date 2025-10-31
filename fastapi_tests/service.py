@@ -24,9 +24,8 @@ def make_app():
     setup_routes(api_factory)
 
     app = fastapi.FastAPI()
-    app.include_router(api_factory.router)
-    app.include_router(api_factory.secure_router)
-    app.include_router(api_factory.secure_by_cookie_or_header_router)
+    for router in api_factory.list_routers():
+        app.include_router(router)
     api_factory.setup_session_db(sessiondb_conn)
     return app
 

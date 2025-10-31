@@ -22,6 +22,7 @@ pre-commit
 fastapi
 httpx
 pytest
+pytest_asyncio
 pytz
 uvicorn
 celery

@@ -2,6 +2,10 @@
 History
 =======
 
+0.99.1 (2025-10-31)
+-------------------
+* Fixed skip_dbtransaction option for FastAPI-Piccolo endpoints
+
 0.99.0 (2025-08-07)
 -------------------
 * Added FormParams support for FastAPI

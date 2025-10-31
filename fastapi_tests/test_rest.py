@@ -1,4 +1,3 @@
-import asyncio
 from unittest import mock
 import httpx
 
@@ -6,10 +5,8 @@ import pytest
 from requests.exceptions import HTTPError
 
 import apphelpers.sessions as sessionslib
-from apphelpers.db.piccolo import destroy_db_from_basetable, setup_db_from_basetable
 from apphelpers.errors.fastapi import BaseError
 from apphelpers.rest.fastapi import honeybadger_wrapper
-from fastapi_tests.app.models import BaseTable
 
 base_url = "http://127.0.0.1:5000/"
 echo_url = base_url + "echo"
@@ -23,14 +20,8 @@ echo_site_groups_async_url = base_url + "sites/{site_id}/echo-groups-async"
 pid_path = "tests/run/app.pid"
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 class TestRest:
-
-    @pytest.fixture(autouse=True)
-    async def setup_class(self, sessionsdb: sessionslib.SessionDBHandler):
-        await sessionsdb.destroy_all()
-        destroy_db_from_basetable(BaseTable)
-        setup_db_from_basetable(BaseTable)
 
     async def test_get(self, client: httpx.AsyncClient):
         word = "hello"
@@ -94,8 +85,9 @@ class TestRest:
         assert resp.status_code == 200
         assert resp.json() == ("%s:%s" % (uid, word))
 
-        cookies = {"__s": sid}
-        resp = await client.get(url, cookies=cookies)
+        client.cookies.set("__s", sid)
+        resp = await client.get(url)
+        client.cookies.delete("__s")
         assert resp.status_code == 200
         assert resp.json() == ("%s:%s" % (uid, word))
 
@@ -366,7 +358,7 @@ class TestRest:
         response = await client.get(url)
         assert response.json() == 3
 
-    def test_honeybadger_wrapper(self):
+    async def test_honeybadger_wrapper(self):
 
         mocked_honeybadger = mock.MagicMock()
         wrapper = honeybadger_wrapper(mocked_honeybadger)
@@ -395,11 +387,11 @@ class TestRest:
         assert not mocked_honeybadger.notify.called
 
         with pytest.raises(IgnorableError):
-            asyncio.run(wrapped_bad_endpoint(1))
+            await wrapped_bad_endpoint(1)
         assert not mocked_honeybadger.notify.called
 
         with pytest.raises(BaseError) as e:
-            asyncio.run(wrapped_worse_endpoint(1, password="secret"))
+            await wrapped_worse_endpoint(1, password="secret")
         mocked_honeybadger.notify.assert_called_once_with(
             e.value,
             context={
@@ -411,14 +403,14 @@ class TestRest:
         assert mocked_honeybadger.notify.call_count == 1
 
         with pytest.raises(RuntimeError):
-            asyncio.run(wrapped_worst_endpoint(1))
+            await wrapped_worst_endpoint(1)
         assert mocked_honeybadger.notify.call_count == 2
 
         mocked_honeybadger.notify.side_effect = HTTPError(
             response=mock.MagicMock(status_code=403)
         )
         with pytest.raises(RuntimeError):
-            asyncio.run(wrapped_worst_endpoint(1))
+            await wrapped_worst_endpoint(1)
         # TODO: How to check nested exception?
         assert mocked_honeybadger.notify.call_count == 3
 
@@ -426,6 +418,6 @@ class TestRest:
             response=mock.MagicMock(status_code=401)
         )
         with pytest.raises(HTTPError):
-            asyncio.run(wrapped_worst_endpoint(1))
+            await wrapped_worst_endpoint(1)
         # TODO: How to check nested exception?
         assert mocked_honeybadger.notify.call_count == 4
