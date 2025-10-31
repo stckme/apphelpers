@@ -435,16 +435,6 @@ class APIFactory:
         self.secure_by_cookie_or_header_router = APIRouter(
             route_class=SecureByCookieOrHeaderRouter
         )
-        if peewee_enabled is False:
-            # when piccolo is used, dbtransaction is handled as dependency
-            # so we need separate routers without dbtransaction wrapper
-            self.router_without_dbtransaction = APIRouter(route_class=Router)
-            self.secure_router_without_dbtransaction = APIRouter(
-                route_class=SecureRouter
-            )
-            self.secure_by_cookie_or_header_router_without_dbtransaction = APIRouter(
-                route_class=SecureByCookieOrHeaderRouter
-            )
         self.setup_auth_header(auth_header_name)
         self.setup_auth_cookie(auth_cookie_name)
 
@@ -459,11 +449,17 @@ class APIFactory:
         if peewee_enabled:
             self.db_tr_wrapper = dbtransaction(db)
         else:
-            # for piccolo, we need to add dependency to routers
-            self.router.dependencies.append(dbtransaction(db))
-            self.secure_router.dependencies.append(dbtransaction(db))
-            self.secure_by_cookie_or_header_router.dependencies.append(
-                dbtransaction(db)
+            # For piccolo, dbtransaction is handled as dependency,
+            # we need separate routers with dbtransaction dependency
+            self.router_with_dbtransaction = APIRouter(
+                route_class=Router, dependencies=[dbtransaction(db)]
+            )
+            self.secure_router_with_dbtransaction = APIRouter(
+                route_class=SecureRouter, dependencies=[dbtransaction(db)]
+            )
+            self.secure_by_cookie_or_header_router_with_dbtransaction = APIRouter(
+                route_class=SecureByCookieOrHeaderRouter,
+                dependencies=[dbtransaction(db)],
             )
 
     def setup_honeybadger_monitoring(self):
@@ -633,27 +629,25 @@ class APIFactory:
         )
 
     def choose_router(self, f):
-        skip_dbtransaction = (
-            getattr(f, "skip_dbtransaction", False) and peewee_enabled is False
-        )
+        if peewee_enabled or getattr(f, "skip_dbtransaction", False):
+            if getattr(f, "auth_by_cookie_or_header", False):
+                return self.secure_by_cookie_or_header_router
 
-        if skip_dbtransaction and getattr(f, "auth_by_cookie_or_header", False):
-            return self.secure_by_cookie_or_header_router_without_dbtransaction
+            elif getattr(f, "login_required", False):
+                return self.secure_router
 
-        elif skip_dbtransaction and getattr(f, "login_required", False):
-            return self.secure_router_without_dbtransaction
+            else:
+                return self.router
 
-        elif skip_dbtransaction:
-            return self.router_without_dbtransaction
-
+        # For piccolo, dbtransaction is handled by separate routers
         elif getattr(f, "auth_by_cookie_or_header", False):
-            return self.secure_by_cookie_or_header_router
+            return self.secure_by_cookie_or_header_router_with_dbtransaction
 
         elif getattr(f, "login_required", False):
-            return self.secure_router
+            return self.secure_router_with_dbtransaction
 
         else:
-            return self.router
+            return self.router_with_dbtransaction
 
     def build(self, method, method_args, method_kw, f):
         module = f.__module__.split(".")[-1].strip("_")
