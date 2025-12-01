@@ -12,7 +12,7 @@ def auth_by_cookie_or_header(func):
     """Auth token can be provided by cookie or header."""
 
     func.auth_by_cookie_or_header = True
-    return login_required(func)
+    return func
 
 
 def any_group_required(*groups):
