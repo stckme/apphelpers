@@ -407,7 +407,6 @@ class OptionalAuthByHeaderRouter(AuthByHeaderRouter):
         return custom_route_handler
 
 
-
 class OptionalAuthByCookieOrHeaderRouter(OptionalAuthByHeaderRouter):
     auth_cookie_name = None
 
@@ -419,7 +418,6 @@ class OptionalAuthByCookieOrHeaderRouter(OptionalAuthByHeaderRouter):
         return _request.cookies.get(self.auth_cookie_name) or _request.headers.get(
             self.auth_header_name
         )
-
 
 
 class APIFactory:
@@ -449,8 +447,12 @@ class APIFactory:
         self.auth_by_cookie_or_header_router = APIRouter(
             route_class=AuthByCookieOrHeaderRouter
         )
-        self.optional_auth_by_header_router = APIRouter(route_class=OptionalAuthByHeaderRouter)
-        self.optional_auth_by_cookie_or_header_router = APIRouter(route_class=OptionalAuthByCookieOrHeaderRouter)
+        self.optional_auth_by_header_router = APIRouter(
+            route_class=OptionalAuthByHeaderRouter
+        )
+        self.optional_auth_by_cookie_or_header_router = APIRouter(
+            route_class=OptionalAuthByCookieOrHeaderRouter
+        )
 
         # For piccolo, dbtransaction is handled as dependency, we need separate
         # routers with dbtransaction dependency if setup_db_transaction is called
@@ -497,13 +499,17 @@ class APIFactory:
                 route_class=AuthByHeaderRouter, dependencies=[dbtransaction(db)]
             )
             self.auth_by_cookie_or_header_router_with_dbtransaction = APIRouter(
-                route_class=AuthByCookieOrHeaderRouter, dependencies=[dbtransaction(db)],
+                route_class=AuthByCookieOrHeaderRouter,
+                dependencies=[dbtransaction(db)],
             )
             self.optional_auth_by_header_router_with_dbtransaction = APIRouter(
                 route_class=OptionalAuthByHeaderRouter, dependencies=[dbtransaction(db)]
             )
-            self.optional_auth_by_cookie_or_header_router_with_dbtransaction = APIRouter(
-                route_class=OptionalAuthByCookieOrHeaderRouter, dependencies=[dbtransaction(db)]
+            self.optional_auth_by_cookie_or_header_router_with_dbtransaction = (
+                APIRouter(
+                    route_class=OptionalAuthByCookieOrHeaderRouter,
+                    dependencies=[dbtransaction(db)],
+                )
             )
 
     def setup_honeybadger_monitoring(self):
