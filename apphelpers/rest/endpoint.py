@@ -8,6 +8,13 @@ def login_required(func):
     return func
 
 
+def skip_authentication(func):
+    """Auth token is not required for this endpoint."""
+
+    func.skip_authentication = True
+    return func
+
+
 def auth_by_cookie_or_header(func):
     """Auth token can be provided by cookie or header."""
 

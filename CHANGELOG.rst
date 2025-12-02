@@ -2,9 +2,10 @@
 History
 =======
 
-0.99.2 (2025-12-01)
+0.100.0 (2025-12-03)
 -------------------
 * Removed login_required for auth_by_cookie_or_header
+* Added skip_authentication decorator to mark endpoints that do not require authentication
 
 0.99.1 (2025-10-31)
 -------------------

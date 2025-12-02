@@ -443,6 +443,7 @@ class APIFactory:
         if sessiondb_conn:
             self.setup_session_db(sessiondb_conn)
 
+        self.unsecure_router = APIRouter()
         self.auth_by_header_router = APIRouter(route_class=AuthByHeaderRouter)
         self.auth_by_cookie_or_header_router = APIRouter(
             route_class=AuthByCookieOrHeaderRouter
@@ -456,6 +457,7 @@ class APIFactory:
 
         # For piccolo, dbtransaction is handled as dependency, we need separate
         # routers with dbtransaction dependency if setup_db_transaction is called
+        self.unsecure_router_with_dbtransaction = None
         self.auth_by_header_router_with_dbtransaction = None
         self.auth_by_cookie_or_header_router_with_dbtransaction = None
         self.optional_auth_by_header_router_with_dbtransaction = None
@@ -478,6 +480,8 @@ class APIFactory:
                 self.optional_auth_by_header_router_with_dbtransaction,
                 self.optional_auth_by_cookie_or_header_router,
                 self.optional_auth_by_cookie_or_header_router_with_dbtransaction,
+                self.unsecure_router,
+                self.unsecure_router_with_dbtransaction,
             )
             if router is not None
         ]
@@ -495,6 +499,9 @@ class APIFactory:
         else:
             # For piccolo, dbtransaction is handled as dependency,
             # we need separate routers with dbtransaction dependency
+            self.unsecure_router_with_dbtransaction = APIRouter(
+                dependencies=[dbtransaction(db)]
+            )
             self.auth_by_header_router_with_dbtransaction = APIRouter(
                 route_class=AuthByHeaderRouter, dependencies=[dbtransaction(db)]
             )
@@ -692,6 +699,9 @@ class APIFactory:
             elif getattr(f, "login_required", False):
                 return self.auth_by_header_router
 
+            elif getattr(f, "skip_authentication", False):
+                return self.unsecure_router
+
             else:
                 return self.optional_auth_by_header_router
 
@@ -704,6 +714,9 @@ class APIFactory:
 
         elif getattr(f, "login_required", False):
             return self.auth_by_header_router_with_dbtransaction
+
+        elif getattr(f, "skip_authentication", False):
+            return self.unsecure_router_with_dbtransaction
 
         else:
             return self.optional_auth_by_header_router_with_dbtransaction
