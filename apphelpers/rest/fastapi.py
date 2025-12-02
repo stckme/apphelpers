@@ -699,7 +699,7 @@ class APIFactory:
             elif getattr(f, "login_required", False):
                 return self.auth_by_header_router
 
-            elif getattr(f, "skip_authentication", False):
+            elif getattr(f, "login_not_required", False):
                 return self.unsecure_router
 
             else:
@@ -715,7 +715,7 @@ class APIFactory:
         elif getattr(f, "login_required", False):
             return self.auth_by_header_router_with_dbtransaction
 
-        elif getattr(f, "skip_authentication", False):
+        elif getattr(f, "login_not_required", False):
             return self.unsecure_router_with_dbtransaction
 
         else:
