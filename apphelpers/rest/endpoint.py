@@ -8,10 +8,17 @@ def login_required(func):
     return func
 
 
-def login_not_required(func):
+def login_optional(func):
+    """Auth token is optional for this endpoint."""
+
+    func.login_optional = True
+    return func
+
+
+def skip_authorization(func):
     """Auth token is not required for this endpoint."""
 
-    func.login_not_required = True
+    func.skip_authorization = True
     return func
 
 

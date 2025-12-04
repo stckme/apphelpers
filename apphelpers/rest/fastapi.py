@@ -691,35 +691,35 @@ class APIFactory:
     def choose_router(self, f):
         if peewee_enabled or getattr(f, "skip_dbtransaction", False):
             if getattr(f, "auth_by_cookie_or_header", False):
-                if getattr(f, "login_required", False):
-                    return self.auth_by_cookie_or_header_router
-                else:
+                if getattr(f, "login_optional", False):
                     return self.optional_auth_by_cookie_or_header_router
+                else:  # login_required
+                    return self.auth_by_cookie_or_header_router
 
-            elif getattr(f, "login_required", False):
-                return self.auth_by_header_router
+            elif getattr(f, "login_optional", False):
+                return self.optional_auth_by_header_router
 
-            elif getattr(f, "login_not_required", False):
+            elif getattr(f, "skip_authorization", False):
                 return self.unsecure_router
 
-            else:
-                return self.optional_auth_by_header_router
+            else:  # login_required
+                return self.auth_by_header_router
 
         # For piccolo, dbtransaction is handled by separate routers
         elif getattr(f, "auth_by_cookie_or_header", False):
-            if getattr(f, "login_required", False):
-                return self.auth_by_cookie_or_header_router_with_dbtransaction
-            else:
+            if getattr(f, "login_optional", False):
                 return self.optional_auth_by_cookie_or_header_router_with_dbtransaction
+            else:  # login_required
+                return self.auth_by_cookie_or_header_router_with_dbtransaction
 
-        elif getattr(f, "login_required", False):
-            return self.auth_by_header_router_with_dbtransaction
+        elif getattr(f, "login_optional", False):
+            return self.optional_auth_by_header_router_with_dbtransaction
 
-        elif getattr(f, "login_not_required", False):
+        elif getattr(f, "skip_authorization", False):
             return self.unsecure_router_with_dbtransaction
 
-        else:
-            return self.optional_auth_by_header_router_with_dbtransaction
+        else:  # login_required
+            return self.auth_by_header_router_with_dbtransaction
 
     def build(self, method, method_args, method_kw, f):
         module = f.__module__.split(".")[-1].strip("_")
