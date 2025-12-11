@@ -8,18 +8,22 @@ from apphelpers.rest.fastapi import RequestHeaders, json_body, AuthParams, BodyP
 from fastapi_tests.app.models import Book
 
 
+@ep.login_optional
 def echo(word, user: AuthParams.user):
     return "%s:%s" % (user.id, word) if user else word
 
 
+@ep.login_optional
 async def echo_async(word, user: AuthParams.user):
     return "%s:%s" % (user.id, word) if user else word
 
 
+@ep.login_optional
 def echo_post(data: json_body, user: AuthParams.user):
     return "%s:%s" % (user.id, data) if user else data
 
 
+@ep.skip_authorization
 def echo_header(x_key: RequestHeaders.custom):
     return x_key
 
@@ -42,6 +46,7 @@ async def echo_groups_async(user: AuthParams.user):
     return user.groups
 
 
+@ep.skip_authorization
 def add(nums):
     return sum(int(x) for x in nums)
 
@@ -99,11 +104,13 @@ class Fields(BaseModel):
 
 
 @ep.response_model(Fields)
+@ep.skip_authorization
 async def get_fields(fields: set = Query(..., default_factory=set)):
     data = {"foo": 1, "bar": None}
     return {k: v for k, v in data.items() if k in fields}
 
 
+@ep.skip_authorization
 async def add_books(succeed: bool):
     await Book.insert(Book(name="The Pillars of the Earth")).run()
     await Book.insert(Book(name="The Cathedral and the Bazaar")).run()
@@ -112,6 +119,7 @@ async def add_books(succeed: bool):
     await Book.insert(Book(name="The Ego Trick")).run()
 
 
+@ep.skip_authorization
 async def count_books():
     return await Book.count()
 

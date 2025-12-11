@@ -2,10 +2,12 @@
 History
 =======
 
-0.100.0 (2025-12-03)
+0.100.0 (2025-12-11)
 -------------------
 * Removed login_required for auth_by_cookie_or_header
-* Added login_not_required decorator to mark endpoints that do not require authentication
+* Added skip_authorization decorator to mark endpoints that do not require authentication
+* Added login_optional decorator for endpoints where login is optional
+* Made login_required the default authorization decorator for FastAPI endpoints
 
 0.99.1 (2025-10-31)
 -------------------
