@@ -694,6 +694,7 @@ class APIFactory:
                 if getattr(f, "login_optional", False):
                     return self.optional_auth_by_cookie_or_header_router
                 else:  # login_required
+                    f.login_required = True
                     return self.auth_by_cookie_or_header_router
 
             elif getattr(f, "login_optional", False):
@@ -703,6 +704,7 @@ class APIFactory:
                 return self.unsecure_router
 
             else:  # login_required
+                f.login_required = True
                 return self.auth_by_header_router
 
         # For piccolo, dbtransaction is handled by separate routers
@@ -710,6 +712,7 @@ class APIFactory:
             if getattr(f, "login_optional", False):
                 return self.optional_auth_by_cookie_or_header_router_with_dbtransaction
             else:  # login_required
+                f.login_required = True
                 return self.auth_by_cookie_or_header_router_with_dbtransaction
 
         elif getattr(f, "login_optional", False):
@@ -719,6 +722,7 @@ class APIFactory:
             return self.unsecure_router_with_dbtransaction
 
         else:  # login_required
+            f.login_required = True
             return self.auth_by_header_router_with_dbtransaction
 
     def build(self, method, method_args, method_kw, f):
