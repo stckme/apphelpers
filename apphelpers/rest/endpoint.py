@@ -8,11 +8,25 @@ def login_required(func):
     return func
 
 
+def login_optional(func):
+    """Auth token is optional for this endpoint."""
+
+    func.login_optional = True
+    return func
+
+
+def skip_authorization(func):
+    """Auth token is not required for this endpoint."""
+
+    func.skip_authorization = True
+    return func
+
+
 def auth_by_cookie_or_header(func):
     """Auth token can be provided by cookie or header."""
 
     func.auth_by_cookie_or_header = True
-    return login_required(func)
+    return func
 
 
 def any_group_required(*groups):

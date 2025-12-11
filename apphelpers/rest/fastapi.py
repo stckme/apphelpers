@@ -242,7 +242,7 @@ class FormParams:
     bytes = Annotated[bytes, Form()]
 
 
-class SecureRouter(APIRoute):
+class AuthByHeaderRouter(APIRoute):
     sessions = None
     auth_header_name = None
 
@@ -324,7 +324,7 @@ class SecureRouter(APIRoute):
         return custom_route_handler
 
 
-class SecureByCookieOrHeaderRouter(SecureRouter):
+class AuthByCookieOrHeaderRouter(AuthByHeaderRouter):
     auth_cookie_name = None
 
     @classmethod
@@ -337,9 +337,9 @@ class SecureByCookieOrHeaderRouter(SecureRouter):
         )
 
 
-class Router(SecureRouter):
+class OptionalAuthByHeaderRouter(AuthByHeaderRouter):
     def get_route_handler(self):
-        original_route_handler = super(SecureRouter, self).get_route_handler()
+        original_route_handler = super(AuthByHeaderRouter, self).get_route_handler()
 
         async def custom_route_handler(_request: Request):
             uid, groups, name, email, mobile, site_groups, site_ctx = (
@@ -407,6 +407,19 @@ class Router(SecureRouter):
         return custom_route_handler
 
 
+class OptionalAuthByCookieOrHeaderRouter(OptionalAuthByHeaderRouter):
+    auth_cookie_name = None
+
+    @classmethod
+    def set_auth_cookie_name(cls, cookie_name: str):
+        cls.auth_cookie_name = cookie_name
+
+    def extract_auth_token(self, _request: Request):
+        return _request.cookies.get(self.auth_cookie_name) or _request.headers.get(
+            self.auth_header_name
+        )
+
+
 class APIFactory:
     def __init__(
         self,
@@ -430,16 +443,25 @@ class APIFactory:
         if sessiondb_conn:
             self.setup_session_db(sessiondb_conn)
 
-        self.router = APIRouter(route_class=Router)
-        self.secure_router = APIRouter(route_class=SecureRouter)
-        self.secure_by_cookie_or_header_router = APIRouter(
-            route_class=SecureByCookieOrHeaderRouter
+        self.unsecure_router = APIRouter()
+        self.auth_by_header_router = APIRouter(route_class=AuthByHeaderRouter)
+        self.auth_by_cookie_or_header_router = APIRouter(
+            route_class=AuthByCookieOrHeaderRouter
         )
+        self.optional_auth_by_header_router = APIRouter(
+            route_class=OptionalAuthByHeaderRouter
+        )
+        self.optional_auth_by_cookie_or_header_router = APIRouter(
+            route_class=OptionalAuthByCookieOrHeaderRouter
+        )
+
         # For piccolo, dbtransaction is handled as dependency, we need separate
         # routers with dbtransaction dependency if setup_db_transaction is called
-        self.router_with_dbtransaction = None
-        self.secure_router_with_dbtransaction = None
-        self.secure_by_cookie_or_header_router_with_dbtransaction = None
+        self.unsecure_router_with_dbtransaction = None
+        self.auth_by_header_router_with_dbtransaction = None
+        self.auth_by_cookie_or_header_router_with_dbtransaction = None
+        self.optional_auth_by_header_router_with_dbtransaction = None
+        self.optional_auth_by_cookie_or_header_router_with_dbtransaction = None
 
         self.setup_auth_header(auth_header_name)
         self.setup_auth_cookie(auth_cookie_name)
@@ -450,12 +472,16 @@ class APIFactory:
         return [
             router
             for router in (
-                self.secure_router,
-                self.secure_router_with_dbtransaction,
-                self.secure_by_cookie_or_header_router,
-                self.secure_by_cookie_or_header_router_with_dbtransaction,
-                self.router,
-                self.router_with_dbtransaction,
+                self.auth_by_header_router,
+                self.auth_by_header_router_with_dbtransaction,
+                self.auth_by_cookie_or_header_router,
+                self.auth_by_cookie_or_header_router_with_dbtransaction,
+                self.optional_auth_by_header_router,
+                self.optional_auth_by_header_router_with_dbtransaction,
+                self.optional_auth_by_cookie_or_header_router,
+                self.optional_auth_by_cookie_or_header_router_with_dbtransaction,
+                self.unsecure_router,
+                self.unsecure_router_with_dbtransaction,
             )
             if router is not None
         ]
@@ -473,15 +499,24 @@ class APIFactory:
         else:
             # For piccolo, dbtransaction is handled as dependency,
             # we need separate routers with dbtransaction dependency
-            self.router_with_dbtransaction = APIRouter(
-                route_class=Router, dependencies=[dbtransaction(db)]
+            self.unsecure_router_with_dbtransaction = APIRouter(
+                dependencies=[dbtransaction(db)]
             )
-            self.secure_router_with_dbtransaction = APIRouter(
-                route_class=SecureRouter, dependencies=[dbtransaction(db)]
+            self.auth_by_header_router_with_dbtransaction = APIRouter(
+                route_class=AuthByHeaderRouter, dependencies=[dbtransaction(db)]
             )
-            self.secure_by_cookie_or_header_router_with_dbtransaction = APIRouter(
-                route_class=SecureByCookieOrHeaderRouter,
+            self.auth_by_cookie_or_header_router_with_dbtransaction = APIRouter(
+                route_class=AuthByCookieOrHeaderRouter,
                 dependencies=[dbtransaction(db)],
+            )
+            self.optional_auth_by_header_router_with_dbtransaction = APIRouter(
+                route_class=OptionalAuthByHeaderRouter, dependencies=[dbtransaction(db)]
+            )
+            self.optional_auth_by_cookie_or_header_router_with_dbtransaction = (
+                APIRouter(
+                    route_class=OptionalAuthByCookieOrHeaderRouter,
+                    dependencies=[dbtransaction(db)],
+                )
             )
 
     def setup_honeybadger_monitoring(self):
@@ -496,12 +531,14 @@ class APIFactory:
         self.honeybadger_wrapper = honeybadger_wrapper(hb)
 
     def setup_auth_header(self, auth_header_name: str):
-        Router.set_auth_header_name(auth_header_name)
-        SecureRouter.set_auth_header_name(auth_header_name)
-        SecureByCookieOrHeaderRouter.set_auth_header_name(auth_header_name)
+        AuthByHeaderRouter.set_auth_header_name(auth_header_name)
+        AuthByCookieOrHeaderRouter.set_auth_header_name(auth_header_name)
+        OptionalAuthByHeaderRouter.set_auth_header_name(auth_header_name)
+        OptionalAuthByCookieOrHeaderRouter.set_auth_header_name(auth_header_name)
 
     def setup_auth_cookie(self, auth_cookie_name: str):
-        SecureByCookieOrHeaderRouter.set_auth_cookie_name(auth_cookie_name)
+        AuthByCookieOrHeaderRouter.set_auth_cookie_name(auth_cookie_name)
+        OptionalAuthByCookieOrHeaderRouter.set_auth_cookie_name(auth_cookie_name)
 
     def setup_session_db(self, sessiondb_conn):
         """
@@ -509,9 +546,10 @@ class APIFactory:
                            (host, port, password, db)
         """
         self.sessions = SessionDBHandler(sessiondb_conn)
-        Router.setup_sessions(self.sessions)
-        SecureRouter.setup_sessions(self.sessions)
-        SecureByCookieOrHeaderRouter.setup_sessions(self.sessions)
+        OptionalAuthByHeaderRouter.setup_sessions(self.sessions)
+        OptionalAuthByCookieOrHeaderRouter.setup_sessions(self.sessions)
+        AuthByHeaderRouter.setup_sessions(self.sessions)
+        AuthByCookieOrHeaderRouter.setup_sessions(self.sessions)
 
         def access_wrapper(f):
             """
@@ -653,23 +691,35 @@ class APIFactory:
     def choose_router(self, f):
         if peewee_enabled or getattr(f, "skip_dbtransaction", False):
             if getattr(f, "auth_by_cookie_or_header", False):
-                return self.secure_by_cookie_or_header_router
+                if getattr(f, "login_optional", False):
+                    return self.optional_auth_by_cookie_or_header_router
+                else:  # login_required
+                    return self.auth_by_cookie_or_header_router
 
-            elif getattr(f, "login_required", False):
-                return self.secure_router
+            elif getattr(f, "login_optional", False):
+                return self.optional_auth_by_header_router
 
-            else:
-                return self.router
+            elif getattr(f, "skip_authorization", False):
+                return self.unsecure_router
+
+            else:  # login_required
+                return self.auth_by_header_router
 
         # For piccolo, dbtransaction is handled by separate routers
         elif getattr(f, "auth_by_cookie_or_header", False):
-            return self.secure_by_cookie_or_header_router_with_dbtransaction
+            if getattr(f, "login_optional", False):
+                return self.optional_auth_by_cookie_or_header_router_with_dbtransaction
+            else:  # login_required
+                return self.auth_by_cookie_or_header_router_with_dbtransaction
 
-        elif getattr(f, "login_required", False):
-            return self.secure_router_with_dbtransaction
+        elif getattr(f, "login_optional", False):
+            return self.optional_auth_by_header_router_with_dbtransaction
 
-        else:
-            return self.router_with_dbtransaction
+        elif getattr(f, "skip_authorization", False):
+            return self.unsecure_router_with_dbtransaction
+
+        else:  # login_required
+            return self.auth_by_header_router_with_dbtransaction
 
     def build(self, method, method_args, method_kw, f):
         module = f.__module__.split(".")[-1].strip("_")
