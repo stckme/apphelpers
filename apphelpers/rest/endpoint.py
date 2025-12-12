@@ -1,5 +1,18 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
+from enum import Enum
+
+
+def _unpack(objs):
+    if isinstance(objs, Iterable) and not isinstance(objs, (str, bytes)):
+        for obj in objs:
+            yield from _unpack(obj)
+    elif isinstance(objs, Enum):
+        yield objs.value
+    else:
+        yield objs
+
 
 def login_required(func):
     """Auth token is required for this endpoint."""
@@ -33,7 +46,7 @@ def any_group_required(*groups):
     """Any of the mentioned groups is required."""
 
     def decorator(func):
-        func.any_group_required = set(groups)
+        func.any_group_required = set(_unpack(groups))
         return login_required(func)
 
     return decorator
@@ -43,7 +56,7 @@ def all_groups_required(*groups):
     """All of the mentioned groups are required."""
 
     def decorator(func):
-        func.all_groups_required = set(groups)
+        func.all_groups_required = set(_unpack(groups))
         return login_required(func)
 
     return decorator
@@ -53,7 +66,7 @@ def groups_forbidden(*groups):
     """None of the mentioned groups are allowed."""
 
     def decorator(func):
-        func.groups_forbidden = set(groups)
+        func.groups_forbidden = set(_unpack(groups))
         return login_required(func)
 
     return decorator

@@ -2,6 +2,10 @@
 History
 =======
 
+0.100.1 (2025-12-12)
+--------------------
+* Improved syntax of ACL decorators for endpoints
+
 0.100.0 (2025-12-11)
 --------------------
 * Removed login_required for auth_by_cookie_or_header

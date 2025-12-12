@@ -15,8 +15,8 @@ def secure_echo(word, user: hug.directives.user = None):
     return "%s:%s" % (user.id, word) if user else word
 
 
-@ep.any_group_required(globalgroups.privileged.value)
-@ep.groups_forbidden(globalgroups.forbidden.value)
+@ep.any_group_required(globalgroups.privileged)
+@ep.groups_forbidden(globalgroups.forbidden)
 def echo_groups(user: hug.directives.user = None):
     return user.groups
 
@@ -46,16 +46,13 @@ def secure_multisite_echo(word, user: hug.directives.user = None):
     return "%s:%s" % (user.id, word) if user else word
 
 
-@ep.any_group_required(sitegroups.privileged.value)
-@ep.groups_forbidden(globalgroups.forbidden.value)
+@ep.any_group_required(sitegroups.privileged)
+@ep.groups_forbidden(globalgroups.forbidden)
 def echo_multisite_groups(site_id: int, user: hug.directives.user = None):
     return user.groups
 
 
-@ep.all_groups_required(
-    globalgroups.privileged.value,
-    sitegroups.privileged.value,
-)
+@ep.all_groups_required({globalgroups.privileged, sitegroups.privileged})
 def echo_multisite_all_groups(site_id: int, user: hug.directives.user = None):
     return user.groups + user.site_groups[site_id]
 
