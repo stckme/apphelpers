@@ -20,8 +20,8 @@ setup_requirements = []
 test_requirements = []
 
 setup(
-    author="Scroll Tech",
-    author_email="tech@scrollstack.com",
+    author="Stck.me Engineering",
+    author_email="engg@stck.me",
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
@@ -41,7 +41,7 @@ setup(
     setup_requires=setup_requirements,
     test_suite="tests",
     tests_require=test_requirements,
-    url="https://github.com/scrolltech/apphelpers",
+    url="https://github.com/stckme/apphelpers",
     version="0.100.1",
     zip_safe=False,
 )
