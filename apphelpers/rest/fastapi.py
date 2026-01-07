@@ -703,9 +703,12 @@ class APIFactory:
             elif getattr(f, "skip_authorization", False):
                 return self.unsecure_router
 
-            else:  # login_required
+            elif self.sessions:  # login_required
                 f.login_required = True
                 return self.auth_by_header_router
+
+            else:  # sessions config not set up
+                return self.unsecure_router
 
         # For piccolo, dbtransaction is handled by separate routers
         elif getattr(f, "auth_by_cookie_or_header", False):
@@ -721,9 +724,12 @@ class APIFactory:
         elif getattr(f, "skip_authorization", False):
             return self.unsecure_router_with_dbtransaction
 
-        else:  # login_required
+        elif self.sessions:  # login_required
             f.login_required = True
             return self.auth_by_header_router_with_dbtransaction
+
+        else:  # sessions config not set up
+            return self.unsecure_router_with_dbtransaction
 
     def build(self, method, method_args, method_kw, f):
         module = f.__module__.split(".")[-1].strip("_")

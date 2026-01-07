@@ -2,6 +2,10 @@
 History
 =======
 
+0.100.2 (2026-01-07)
+--------------------
+* Made skip_authorization the default authorization decorator if sessions config is not set up
+
 0.100.1 (2025-12-12)
 --------------------
 * Improved syntax of ACL decorators for endpoints
