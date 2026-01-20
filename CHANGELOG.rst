@@ -2,9 +2,10 @@
 History
 =======
 
-0.100.2 (2026-01-07)
+0.100.2 (2026-01-20)
 --------------------
 * Made skip_authorization the default authorization decorator if sessions config is not set up
+* Apple auth cleaning
 
 0.100.1 (2025-12-12)
 --------------------
