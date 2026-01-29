@@ -1,13 +1,22 @@
+import jwt
 import json
 
-import jwt
 import requests
-
-TOKEN_ISSUER = "https://appleid.apple.com"
-PUBLIC_KEYS_URL = "https://appleid.apple.com/auth/keys"
+from requests_oauthlib import OAuth2Session
 
 
-def fetch_info(token, audience):
+TOKEN_ISSUER = "https://www.facebook.com"
+GRAPH_API_URL = "https://graph.facebook.com"
+PUBLIC_KEYS_URL = "https://www.facebook.com/.well-known/oauth/openid/jwks"
+
+
+def fetch_info(access_token, fields):
+    session = OAuth2Session(token={"access_token": access_token})
+    info_url = f"{GRAPH_API_URL}/me"
+    return session.get(info_url, params={"fields": fields}).json()
+
+
+def fetch_info_using_jwt(token, audience):
     response = requests.get(PUBLIC_KEYS_URL)
     if not response.ok:
         # Retry once if fetching keys failed

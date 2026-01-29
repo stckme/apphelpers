@@ -2,6 +2,13 @@
 History
 =======
 
+0.101.0 (2026-01-29)
+--------------------
+* Added Facebook limited auth support
+* Updated Apple auth to accept audience parameter
+* Removed settings dependency from socialauth modules
+* Cleaned up socialauth modules
+
 0.100.2 (2026-01-20)
 --------------------
 * Made skip_authorization the default authorization decorator if sessions config is not set up
