@@ -2,6 +2,10 @@
 History
 =======
 
+0.101.1 (2026-03-13)
+--------------------
+* Added support for Peewee>=4.0.1
+
 0.101.0 (2026-01-29)
 --------------------
 * Added Facebook limited auth support
