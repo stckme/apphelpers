@@ -6,8 +6,13 @@ from enum import Enum
 
 import pytz
 from peewee import Field, Model
-from playhouse.pool import PooledPostgresqlExtDatabase
 from playhouse.postgres_ext import DateTimeTZField
+
+try:  # For peewee >= 4.0.1
+    from playhouse.postgres_ext import PooledPostgresqlExtDatabase
+except ImportError:
+    from playhouse.pool import PooledPostgresqlExtDatabase
+
 from playhouse.shortcuts import model_to_dict
 
 try:
@@ -40,6 +45,8 @@ def create_pgdb_pool(
     port=None,
     sslmode=None,
     max_connections=32,
+    server_side_cursors=False,
+    **options,
 ):
     return PooledPostgresqlExtDatabase(
         database=database,
@@ -50,8 +57,10 @@ def create_pgdb_pool(
         sslmode=sslmode,
         max_connections=max_connections,
         register_hstore=False,
-        stale_timeout=60 * 2,
-    )  # 2 minutes
+        stale_timeout=60 * 2,  # 2 minutes
+        server_side_cursors=server_side_cursors,
+        **options,
+    )
 
 
 def create_base_model(db):
