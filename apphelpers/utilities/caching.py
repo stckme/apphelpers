@@ -34,7 +34,7 @@ class ReadOnlyCachedModel:
     def _get_matched_keys(cls, data: dict) -> List[str]:
         pattern = cls.ns
         for _field in cls.key_fields:
-            pattern += f':{data.get(_field, "*")}'
+            pattern += f":{data.get(_field, '*')}"
         return cls.connection.keys(pattern)  # type: ignore
 
     @classmethod
@@ -50,6 +50,15 @@ class ReadOnlyCachedModel:
         if primary_key:
             value = cls.connection.get(primary_key)
             return json.loads(value) if value else None
+
+    @classmethod
+    def get_count_with_expiry(cls, **data):
+        key = cls._prefix_key(data)
+        pipe = cls.connection.pipeline()
+        pipe.get(key)
+        pipe.expiretime(key)
+        count, expiry = pipe.execute()
+        return int(count) if count else 0, expiry
 
     @classmethod
     def exists(cls, **data: Any) -> bool:

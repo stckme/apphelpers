@@ -34,7 +34,7 @@ class ReadOnlyAsyncCachedModel:
     async def _get_matched_keys(cls, data: dict) -> List[str]:
         pattern = cls.ns
         for _field in cls.key_fields:
-            pattern += f':{data.get(_field, "*")}'
+            pattern += f":{data.get(_field, '*')}"
         return await cls.connection.keys(pattern)
 
     @classmethod
@@ -61,6 +61,15 @@ class ReadOnlyAsyncCachedModel:
         key: Any = cls._prefix_key(data)
         count: Optional[Any] = await cls.connection.get(key)
         return int(count) if count else 0
+
+    @classmethod
+    async def get_count_with_expiry(cls, **data):
+        key = cls._prefix_key(data)
+        pipe = cls.connection.pipeline()
+        pipe.get(key)
+        pipe.expiretime(key)
+        count, expiry = await pipe.execute()
+        return int(count) if count else 0, expiry
 
     @classmethod
     async def count_matched_keys(cls, **data: Any) -> int:

@@ -2,6 +2,10 @@
 History
 =======
 
+0.101.2 (2026-07-22)
+--------------------
+* Added get_count_with_expiry() to ReadWriteCachedModel
+
 0.101.1 (2026-03-13)
 --------------------
 * Added support for Peewee>=4.0.1
