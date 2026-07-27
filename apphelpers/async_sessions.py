@@ -13,7 +13,9 @@ session_key = ("session" + _SEP).__add__
 
 rev_lookup_prefix = f"uid{_SEP}"
 
-ctx_rev_lookup_key = lambda uid: f"suid{_SEP}{uid}"
+
+def ctx_rev_lookup_key(uid):
+    return f"suid{_SEP}{uid}"
 
 
 def rev_lookup_key(uid, site_ctx=None):
