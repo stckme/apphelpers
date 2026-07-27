@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import _pickle as pickle
 import secrets
 from typing import Any
 
-import _pickle as pickle
 import redis
 
 from apphelpers.errors import InvalidSessionError
@@ -12,6 +12,10 @@ _SEP = ":"
 session_key = ("session" + _SEP).__add__
 
 rev_lookup_prefix = f"uid{_SEP}"
+
+
+def ctx_rev_lookup_key(uid):
+    return f"suid{_SEP}{uid}"
 
 
 def rev_lookup_key(uid, site_ctx=None):
@@ -71,6 +75,11 @@ class SessionDBHandler:
         if uid:
             rev_key = rev_lookup_key(uid, site_ctx)
             self.rconn.setex(rev_key, value=sid, time=ttl)
+
+            if site_ctx:
+                ctx_rev_key = ctx_rev_lookup_key(uid)
+                self.rconn.sadd(ctx_rev_key, rev_key)
+
         self.rconn.expire(key, ttl)
         return sid
 
@@ -95,11 +104,11 @@ class SessionDBHandler:
         return sid.decode() if sid else None
 
     def uid2bound_sids(self, uid):
-        keys = self.rconn.keys(rev_lookup_key(uid, "*"))
+        keys = self.rconn.smembers(ctx_rev_lookup_key(uid))
         return [self.rconn.get(key).decode() for key in keys]
 
     def uid2bound_site_ids(self, uid):
-        keys = self.rconn.keys(rev_lookup_key(uid, "*"))
+        keys = self.rconn.smembers(ctx_rev_lookup_key(uid))
         return [int(key.decode().split(_SEP)[2]) for key in keys]
 
     def sid2uid(self, sid):
@@ -129,7 +138,7 @@ class SessionDBHandler:
     def update(self, sid, keyvalues):
         sk = session_key(sid)
         keyvalues = {k: pickle.dumps(v) for k, v in list(keyvalues.items())}
-        self.rconn.hset(sk, mapping=keyvalues)
+        return self.rconn.hset(sk, mapping=keyvalues)
 
     def update_for(self, uid, keyvalues):
         sid = self.uid2sid(uid)
@@ -143,13 +152,17 @@ class SessionDBHandler:
     def resync(self, sid, keyvalues):
         removed_keys = list(self.get(sid).keys() - keyvalues.keys())
         self.remove_from_session(sid, removed_keys)
-        self.update(sid, keyvalues)
+        return self.update(sid, keyvalues)
 
     def resync_for(self, uid, keyvalues, site_ctx=None):
         keyvalues["uid"] = uid
         keyvalues["site_ctx"] = site_ctx
         sid = self.uid2sid(uid, site_ctx)
-        return self.resync(sid, keyvalues) if sid else None
+        if sid and self.resync(sid, keyvalues) is not None:
+            return True
+        elif site_ctx and not (sid and self.exists(sid)):
+            self.rconn.srem(ctx_rev_lookup_key(uid), rev_lookup_key(uid, site_ctx))
+        return False
 
     def remove_from_session(self, sid, keys):
         sk = session_key(sid)
@@ -162,6 +175,7 @@ class SessionDBHandler:
         sk = session_key(sid)
         self.rconn.delete(sk)
         self.rconn.delete(rev_lookup_key(uid, site_ctx))
+        self.rconn.srem(ctx_rev_lookup_key(uid), rev_lookup_key(uid, site_ctx))
         return True
 
     def destroy_for(self, uid, site_ctx=None):
@@ -175,6 +189,9 @@ class SessionDBHandler:
         keys = self.rconn.keys(rev_lookup_prefix + "*")
         if keys:
             self.rconn.delete(*keys)
+        keys = self.rconn.keys(ctx_rev_lookup_key("*"))
+        if keys:
+            self.rconn.delete(*keys)
 
     def destroy_all_for_bound_site(self, site_ctx):
         keys = self.rconn.keys(rev_lookup_key("*", site_ctx))
@@ -185,9 +202,10 @@ class SessionDBHandler:
             self.rconn.delete(*keys)
 
     def destroy_bound_sessions_for(self, uid):
-        keys = self.rconn.keys(rev_lookup_key(uid, "*"))
+        keys = self.rconn.smembers(ctx_rev_lookup_key(uid))
         if keys:
             sids = [session_key(self.rconn.get(key).decode()) for key in keys]
             if sids:
                 self.rconn.delete(*sids)
             self.rconn.delete(*keys)
+        self.rconn.delete(ctx_rev_lookup_key(uid))

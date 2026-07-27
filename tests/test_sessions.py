@@ -122,3 +122,39 @@ def test_session_lookups():
         sessionsdb.destroy(sid)
         with pytest.raises(InvalidSessionError):
             sessionsdb.get(sid)
+
+
+def test_site_bound_sessions():
+    uid = 100000
+    site1_id = 200000
+    site2_id = 200001
+    sid = sessionsdb.create(uid=uid)
+    bound_sid1 = sessionsdb.create(uid=uid, site_ctx=site1_id)
+    bound_sid2 = sessionsdb.create(uid=uid, site_ctx=site2_id)
+
+    assert sid == sessionsdb.uid2sid(uid)
+    assert bound_sid1 == sessionsdb.uid2sid(uid, site1_id)
+    assert bound_sid2 == sessionsdb.uid2sid(uid, site2_id)
+    assert set(sessionsdb.uid2bound_site_ids(uid)) == {site1_id, site2_id}
+    assert set(sessionsdb.uid2bound_sids(uid)) == {bound_sid1, bound_sid2}
+
+    sessionsdb.rconn.delete(sessionslib.session_key(bound_sid1))
+    sessionsdb.rconn.delete(sessionslib.rev_lookup_key(uid, site1_id))
+
+    assert set(sessionsdb.uid2bound_site_ids(uid)) == {site2_id, site1_id}
+    assert (
+        sessionsdb.resync_for(
+            uid, {"uid": uid, "site_ctx": site1_id}, site_ctx=site1_id
+        )
+        is False
+    )
+    assert set(sessionsdb.uid2bound_site_ids(uid)) == {site2_id}
+    assert set(sessionsdb.uid2bound_sids(uid)) == {bound_sid2}
+
+    sessionsdb.destroy_for(uid, site_ctx=site2_id)
+    assert set(sessionsdb.uid2bound_site_ids(uid)) == set()
+    assert not sessionsdb.rconn.exists(sessionslib.ctx_rev_lookup_key(uid))
+
+    bound_sid1 = sessionsdb.create(uid=uid, site_ctx=site1_id)
+    sessionsdb.destroy_all_for_bound_site(site1_id)
+    assert not sessionsdb.exists(bound_sid1)

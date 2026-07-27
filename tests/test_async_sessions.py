@@ -5,7 +5,6 @@ import pytest
 import apphelpers.async_sessions as sessionslib
 from apphelpers.errors import InvalidSessionError
 
-
 Session = namedtuple("Session", ["uid", "groups", "k", "v"])
 
 
@@ -24,23 +23,23 @@ class TestSessions:
 
     async def test_create(self, sessionsdb: sessionslib.SessionDBHandler):
         # test create
-        d = dict(
-            uid=data.session.uid,
-            groups=data.session.groups,
-            extras=dict(email=data.session_email),
-        )
+        d = {
+            "uid": data.session.uid,
+            "groups": data.session.groups,
+            "extras": {"email": data.session_email},
+        }
         sid = await sessionsdb.create(**d)
         assert len(sid) == 43
         sid_new = await sessionsdb.create(data.session.uid, data.session.groups)
         assert sid == sid_new == await sessionsdb.uid2sid(d["uid"])
         assert await sessionsdb.uid2bound_sids(d["uid"]) == []
 
-        d = dict(
-            uid=data.session.uid,
-            groups=data.session.groups,
-            extras=dict(email=data.session_email),
-            site_ctx=data.site_ctx,
-        )
+        d = {
+            "uid": data.session.uid,
+            "groups": data.session.groups,
+            "extras": {"email": data.session_email},
+            "site_ctx": data.site_ctx,
+        }
         bound_sid = await sessionsdb.create(**d)
         assert bound_sid != sid
         assert bound_sid == await sessionsdb.uid2sid(d["uid"], data.site_ctx)
@@ -51,12 +50,12 @@ class TestSessions:
         await sessionsdb.destroy_all_for_bound_site(data.site_ctx)
         assert not await sessionsdb.exists(bound_sid)
 
-        d = dict(
-            uid=data.session.uid,
-            groups=data.session.groups,
-            extras=dict(email=data.session_email),
-            site_ctx=data.site_ctx,
-        )
+        d = {
+            "uid": data.session.uid,
+            "groups": data.session.groups,
+            "extras": {"email": data.session_email},
+            "site_ctx": data.site_ctx,
+        }
         bound_sid = await sessionsdb.create(**d)
         assert bound_sid != sid
         assert bound_sid == await sessionsdb.uid2sid(d["uid"], data.site_ctx)
@@ -67,11 +66,11 @@ class TestSessions:
         assert not await sessionsdb.exists(bound_sid)
 
     async def test_update(self, sessionsdb: sessionslib.SessionDBHandler):
-        d = dict(
-            uid=data.session.uid,
-            groups=data.session.groups,
-            extras=dict(email=data.session_email),
-        )
+        d = {
+            "uid": data.session.uid,
+            "groups": data.session.groups,
+            "extras": {"email": data.session_email},
+        }
         sid = await sessionsdb.create(**d)
 
         k, v = data.session.k, data.session.v
@@ -84,11 +83,11 @@ class TestSessions:
         assert k not in d
 
     async def test_resync(self, sessionsdb: sessionslib.SessionDBHandler):
-        d = dict(
-            uid=data.session.uid,
-            groups=data.session.groups,
-            extras=dict(email=data.session_email),
-        )
+        d = {
+            "uid": data.session.uid,
+            "groups": data.session.groups,
+            "extras": {"email": data.session_email},
+        }
         sid = await sessionsdb.create(**d)
 
         k, v = data.session.k, data.session.v
@@ -96,11 +95,11 @@ class TestSessions:
         d = await sessionsdb.get(sid)
         assert d[k] == v
 
-        d = dict(
-            uid=data.session.uid,
-            groups=data.session.groups,
-            extras=dict(email=data.session_email),
-        )
+        d = {
+            "uid": data.session.uid,
+            "groups": data.session.groups,
+            "extras": {"email": data.session_email},
+        }
         await sessionsdb.resync(sid, d)
         d = await sessionsdb.get(sid)
         assert k not in d
@@ -118,3 +117,38 @@ class TestSessions:
             await sessionsdb.destroy(sid)
             with pytest.raises(InvalidSessionError):
                 await sessionsdb.get(sid)
+
+    async def test_site_bound_sessions(self, sessionsdb: sessionslib.SessionDBHandler):
+        uid = 100000
+        site1_id = 200000
+        site2_id = 200001
+        sid = await sessionsdb.create(uid=uid)
+        bound_sid1 = await sessionsdb.create(uid=uid, site_ctx=site1_id)
+        bound_sid2 = await sessionsdb.create(uid=uid, site_ctx=site2_id)
+
+        assert sid == await sessionsdb.uid2sid(uid)
+        assert bound_sid1 == await sessionsdb.uid2sid(uid, site1_id)
+        assert bound_sid2 == await sessionsdb.uid2sid(uid, site2_id)
+        assert set(await sessionsdb.uid2bound_site_ids(uid)) == {site1_id, site2_id}
+        assert set(await sessionsdb.uid2bound_sids(uid)) == {bound_sid1, bound_sid2}
+
+        await sessionsdb.rconn.delete(sessionslib.session_key(bound_sid1))
+        await sessionsdb.rconn.delete(sessionslib.rev_lookup_key(uid, site1_id))
+
+        assert set(await sessionsdb.uid2bound_site_ids(uid)) == {site2_id, site1_id}
+        assert (
+            await sessionsdb.resync_for(
+                uid, {"uid": uid, "site_ctx": site1_id}, site_ctx=site1_id
+            )
+            is False
+        )
+        assert set(await sessionsdb.uid2bound_site_ids(uid)) == {site2_id}
+        assert set(await sessionsdb.uid2bound_sids(uid)) == {bound_sid2}
+
+        await sessionsdb.destroy_for(uid, site_ctx=site2_id)
+        assert set(await sessionsdb.uid2bound_site_ids(uid)) == set()
+        assert not await sessionsdb.rconn.exists(sessionslib.ctx_rev_lookup_key(uid))
+
+        bound_sid1 = await sessionsdb.create(uid=uid, site_ctx=site1_id)
+        await sessionsdb.destroy_all_for_bound_site(site1_id)
+        assert await sessionsdb.exists(bound_sid1) is False

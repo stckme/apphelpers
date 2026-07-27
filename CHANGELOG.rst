@@ -2,6 +2,10 @@
 History
 =======
 
+0.102.0 (2026-07-27)
+--------------------
+* Improved session handling for site bound sessions
+
 0.101.2 (2026-07-22)
 --------------------
 * Added get_count_with_expiry() to ReadWriteCachedModel
