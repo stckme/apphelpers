@@ -24,23 +24,23 @@ class TestSessions:
 
     async def test_create(self, sessionsdb: sessionslib.SessionDBHandler):
         # test create
-        d = dict(
-            uid=data.session.uid,
-            groups=data.session.groups,
-            extras=dict(email=data.session_email),
-        )
+        d = {
+            "uid": data.session.uid,
+            "groups": data.session.groups,
+            "extras": {"email": data.session_email},
+        }
         sid = await sessionsdb.create(**d)
         assert len(sid) == 43
         sid_new = await sessionsdb.create(data.session.uid, data.session.groups)
         assert sid == sid_new == await sessionsdb.uid2sid(d["uid"])
         assert await sessionsdb.uid2bound_sids(d["uid"]) == []
 
-        d = dict(
-            uid=data.session.uid,
-            groups=data.session.groups,
-            extras=dict(email=data.session_email),
-            site_ctx=data.site_ctx,
-        )
+        d = {
+            "uid": data.session.uid,
+            "groups": data.session.groups,
+            "extras": {"email": data.session_email},
+            "site_ctx": data.site_ctx,
+        }
         bound_sid = await sessionsdb.create(**d)
         assert bound_sid != sid
         assert bound_sid == await sessionsdb.uid2sid(d["uid"], data.site_ctx)
@@ -51,12 +51,12 @@ class TestSessions:
         await sessionsdb.destroy_all_for_bound_site(data.site_ctx)
         assert not await sessionsdb.exists(bound_sid)
 
-        d = dict(
-            uid=data.session.uid,
-            groups=data.session.groups,
-            extras=dict(email=data.session_email),
-            site_ctx=data.site_ctx,
-        )
+        d = {
+            "uid": data.session.uid,
+            "groups": data.session.groups,
+            "extras": {"email": data.session_email},
+            "site_ctx": data.site_ctx,
+        }
         bound_sid = await sessionsdb.create(**d)
         assert bound_sid != sid
         assert bound_sid == await sessionsdb.uid2sid(d["uid"], data.site_ctx)
@@ -67,11 +67,11 @@ class TestSessions:
         assert not await sessionsdb.exists(bound_sid)
 
     async def test_update(self, sessionsdb: sessionslib.SessionDBHandler):
-        d = dict(
-            uid=data.session.uid,
-            groups=data.session.groups,
-            extras=dict(email=data.session_email),
-        )
+        d = {
+            "uid": data.session.uid,
+            "groups": data.session.groups,
+            "extras": {"email": data.session_email},
+        }
         sid = await sessionsdb.create(**d)
 
         k, v = data.session.k, data.session.v
@@ -84,11 +84,11 @@ class TestSessions:
         assert k not in d
 
     async def test_resync(self, sessionsdb: sessionslib.SessionDBHandler):
-        d = dict(
-            uid=data.session.uid,
-            groups=data.session.groups,
-            extras=dict(email=data.session_email),
-        )
+        d = {
+            "uid": data.session.uid,
+            "groups": data.session.groups,
+            "extras": {"email": data.session_email},
+        }
         sid = await sessionsdb.create(**d)
 
         k, v = data.session.k, data.session.v
@@ -96,11 +96,11 @@ class TestSessions:
         d = await sessionsdb.get(sid)
         assert d[k] == v
 
-        d = dict(
-            uid=data.session.uid,
-            groups=data.session.groups,
-            extras=dict(email=data.session_email),
-        )
+        d = {
+            "uid": data.session.uid,
+            "groups": data.session.groups,
+            "extras": {"email": data.session_email},
+        }
         await sessionsdb.resync(sid, d)
         d = await sessionsdb.get(sid)
         assert k not in d
