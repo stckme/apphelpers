@@ -138,7 +138,7 @@ class SessionDBHandler:
     def update(self, sid, keyvalues):
         sk = session_key(sid)
         keyvalues = {k: pickle.dumps(v) for k, v in list(keyvalues.items())}
-        self.rconn.hset(sk, mapping=keyvalues)
+        return self.rconn.hset(sk, mapping=keyvalues)
 
     def update_for(self, uid, keyvalues):
         sid = self.uid2sid(uid)
@@ -152,13 +152,17 @@ class SessionDBHandler:
     def resync(self, sid, keyvalues):
         removed_keys = list(self.get(sid).keys() - keyvalues.keys())
         self.remove_from_session(sid, removed_keys)
-        self.update(sid, keyvalues)
+        return self.update(sid, keyvalues)
 
     def resync_for(self, uid, keyvalues, site_ctx=None):
         keyvalues["uid"] = uid
         keyvalues["site_ctx"] = site_ctx
         sid = self.uid2sid(uid, site_ctx)
-        return self.resync(sid, keyvalues) if sid else None
+        if sid and self.resync(sid, keyvalues) is not None:
+            return True
+        elif site_ctx and not (sid and self.exists(sid)):
+            self.rconn.srem(ctx_rev_lookup_key(uid), rev_lookup_key(uid, site_ctx))
+        return False
 
     def remove_from_session(self, sid, keys):
         sk = session_key(sid)
