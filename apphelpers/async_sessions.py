@@ -84,7 +84,7 @@ class SessionDBHandler:
         return sid
 
     async def exists(self, sid):
-        return await self.rconn.exists(session_key(sid))
+        return bool(await self.rconn.exists(session_key(sid)))
 
     async def get(self, sid, keys=None) -> dict[str, Any]:
         s_values = await self.rconn.hgetall(session_key(sid))
@@ -107,9 +107,9 @@ class SessionDBHandler:
         keys = await self.rconn.smembers(ctx_rev_lookup_key(uid))
         sids = []
         for key in keys:
-            sid = (await self.rconn.get(key)).decode()
+            sid = await self.rconn.get(key)
             if sid:
-                sids.append(sid)
+                sids.append(sid.decode())
             else:
                 await self.rconn.srem(ctx_rev_lookup_key(uid), key)
         return sids
@@ -165,7 +165,13 @@ class SessionDBHandler:
         keyvalues["uid"] = uid
         keyvalues["site_ctx"] = site_ctx
         sid = await self.uid2sid(uid, site_ctx)
-        return await self.resync(sid, keyvalues) if sid else None
+        if sid and (await self.resync(sid, keyvalues)) is not None:
+            return True
+        elif site_ctx and not (sid and await self.exists(sid)):
+            await self.rconn.srem(
+                ctx_rev_lookup_key(uid), rev_lookup_key(uid, site_ctx)
+            )
+        return False
 
     async def remove_from_session(self, sid, keys):
         sk = session_key(sid)

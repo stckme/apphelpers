@@ -5,7 +5,6 @@ import pytest
 import apphelpers.async_sessions as sessionslib
 from apphelpers.errors import InvalidSessionError
 
-
 Session = namedtuple("Session", ["uid", "groups", "k", "v"])
 
 
@@ -118,3 +117,38 @@ class TestSessions:
             await sessionsdb.destroy(sid)
             with pytest.raises(InvalidSessionError):
                 await sessionsdb.get(sid)
+
+    async def test_site_bound_sessions(self, sessionsdb: sessionslib.SessionDBHandler):
+        uid = 100000
+        site1_id = 200000
+        site2_id = 200001
+        sid = await sessionsdb.create(uid=uid)
+        bound_sid1 = await sessionsdb.create(uid=uid, site_ctx=site1_id)
+        bound_sid2 = await sessionsdb.create(uid=uid, site_ctx=site2_id)
+
+        assert sid == await sessionsdb.uid2sid(uid)
+        assert bound_sid1 == await sessionsdb.uid2sid(uid, site1_id)
+        assert bound_sid2 == await sessionsdb.uid2sid(uid, site2_id)
+        assert set(await sessionsdb.uid2bound_site_ids(uid)) == {site1_id, site2_id}
+        assert set(await sessionsdb.uid2bound_sids(uid)) == {bound_sid1, bound_sid2}
+
+        await sessionsdb.rconn.delete(sessionslib.session_key(bound_sid1))
+        await sessionsdb.rconn.delete(sessionslib.rev_lookup_key(uid, site1_id))
+
+        assert set(await sessionsdb.uid2bound_site_ids(uid)) == {site2_id, site1_id}
+        assert (
+            await sessionsdb.resync_for(
+                uid, {"uid": uid, "site_ctx": site1_id}, site_ctx=site1_id
+            )
+            is False
+        )
+        assert set(await sessionsdb.uid2bound_site_ids(uid)) == {site2_id}
+        assert set(await sessionsdb.uid2bound_sids(uid)) == {bound_sid2}
+
+        await sessionsdb.destroy_for(uid, site_ctx=site2_id)
+        assert set(await sessionsdb.uid2bound_site_ids(uid)) == set()
+        assert not await sessionsdb.rconn.exists(sessionslib.ctx_rev_lookup_key(uid))
+
+        bound_sid1 = await sessionsdb.create(uid=uid, site_ctx=site1_id)
+        await sessionsdb.destroy_all_for_bound_site(site1_id)
+        assert await sessionsdb.exists(bound_sid1) is False
