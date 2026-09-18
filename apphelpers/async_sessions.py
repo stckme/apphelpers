@@ -74,7 +74,7 @@ class SessionDBHandler:
 
         if uid:
             rev_key = rev_lookup_key(uid, site_ctx)
-            await self.rconn.setex(rev_key, value=sid, time=ttl)
+            await self.rconn.set(rev_key, value=sid, ex=ttl)
 
             if site_ctx:
                 ctx_rev_key = ctx_rev_lookup_key(uid)

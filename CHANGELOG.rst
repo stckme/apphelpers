@@ -2,6 +2,11 @@
 History
 =======
 
+0.102.1 (2026-09-18)
+--------------------
+* Replace deprecated setex with set
+* Optimize set + expire calls with a single set(ex=timeout) call
+
 0.102.0 (2026-07-27)
 --------------------
 * Improved session handling for site bound sessions
