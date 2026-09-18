@@ -87,9 +87,7 @@ class ReadWriteAsyncCachedModel(ReadOnlyAsyncCachedModel):
     @classmethod
     async def create(cls, **data: Any) -> str:
         key = cls._prefix_key(data)
-        await cls.connection.set(key, json.dumps(data))
-        if cls.timeout:
-            await cls.connection.expire(key, cls.timeout)
+        await cls.connection.set(key, json.dumps(data), ex=cls.timeout)
         return key
 
     @classmethod
@@ -101,17 +99,13 @@ class ReadWriteAsyncCachedModel(ReadOnlyAsyncCachedModel):
     @classmethod
     async def create_lookup(cls, **data: Any) -> str:
         key = cls._prefix_key(data)
-        await cls.connection.set(key, 1)
-        if cls.timeout:
-            await cls.connection.expire(key, cls.timeout)
+        await cls.connection.set(key, 1, ex=cls.timeout)
         return key
 
     @classmethod
     async def create_counter(cls, starting=1, **data: Any) -> str:
         key = cls._prefix_key(data)
-        await cls.connection.set(key, starting)
-        if cls.timeout:
-            await cls.connection.expire(key, cls.timeout)
+        await cls.connection.set(key, starting, ex=cls.timeout)
         return key
 
     @classmethod
