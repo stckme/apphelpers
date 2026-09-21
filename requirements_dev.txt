@@ -13,6 +13,7 @@ converge
 hug
 psycopg2-binary
 peewee
+greenlet
 redis
 gunicorn
 html2text

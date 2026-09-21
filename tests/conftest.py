@@ -5,18 +5,19 @@ See https://docs.pytest.org/en/latest/reference/fixtures.html
 """
 
 import asyncio
+
 import pytest
 
 import settings
 from apphelpers.async_sessions import SessionDBHandler
+from apphelpers.db.async_peewee import create_pgdb_pool
 
-
-sessiondb_conn = dict(
-    host=settings.SESSIONSDB_HOST,
-    port=settings.SESSIONSDB_PORT,
-    password=settings.SESSIONSDB_PASSWD,
-    db=settings.SESSIONSDB_NO,
-)
+sessiondb_conn = {
+    "host": settings.SESSIONSDB_HOST,
+    "port": settings.SESSIONSDB_PORT,
+    "password": settings.SESSIONSDB_PASSWD,
+    "db": settings.SESSIONSDB_NO,
+}
 
 
 @pytest.fixture(scope="module")
@@ -36,3 +37,15 @@ async def sessionsdb():
     sessionsdb = SessionDBHandler(sessiondb_conn)
     yield sessionsdb
     await sessionsdb.close()
+
+
+@pytest.fixture
+async def async_db():
+    db = create_pgdb_pool(
+        host=settings.DB_HOST,
+        database=settings.DB_NAME,
+        user=settings.DB_USER,
+        password=settings.DB_PASS,
+    )
+    yield db
+    await db.close()

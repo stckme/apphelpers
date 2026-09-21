@@ -12,12 +12,12 @@ from fastapi_tests.app.models import db  # noqa E402
 
 
 def make_app():
-    sessiondb_conn = dict(
-        host=settings.SESSIONSDB_HOST,
-        port=settings.SESSIONSDB_PORT,
-        password=settings.SESSIONSDB_PASSWD,
-        db=settings.SESSIONSDB_NO,
-    )
+    sessiondb_conn = {
+        "host": settings.SESSIONSDB_HOST,
+        "port": settings.SESSIONSDB_PORT,
+        "password": settings.SESSIONSDB_PASSWD,
+        "db": settings.SESSIONSDB_NO,
+    }
 
     api_factory = APIFactory(sessiondb_conn=sessiondb_conn, site_identifier="site_id")
     api_factory.setup_db_transaction(db)
