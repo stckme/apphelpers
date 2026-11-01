@@ -105,7 +105,18 @@ class SessionDBHandler:
 
     def uid2bound_sids(self, uid):
         keys = self.rconn.smembers(ctx_rev_lookup_key(uid))
-        return [self.rconn.get(key).decode() for key in keys]
+        sids = []
+        expired_keys = []
+        for key in keys:
+            sid = self.rconn.get(key)
+            if sid:
+                sids.append(sid.decode())
+            else:
+                expired_keys.append(key)
+
+        if expired_keys:
+            self.rconn.srem(ctx_rev_lookup_key(uid), *expired_keys)
+        return sids
 
     def uid2bound_site_ids(self, uid):
         keys = self.rconn.smembers(ctx_rev_lookup_key(uid))
@@ -204,8 +215,9 @@ class SessionDBHandler:
     def destroy_bound_sessions_for(self, uid):
         keys = self.rconn.smembers(ctx_rev_lookup_key(uid))
         if keys:
-            sids = [session_key(self.rconn.get(key).decode()) for key in keys]
-            if sids:
-                self.rconn.delete(*sids)
+            sids = [self.rconn.get(key) for key in keys]
+            sid_keys = [session_key(sid.decode()) for sid in sids if sid]
+            if sid_keys:
+                self.rconn.delete(*sid_keys)
             self.rconn.delete(*keys)
         self.rconn.delete(ctx_rev_lookup_key(uid))
