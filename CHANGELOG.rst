@@ -2,6 +2,10 @@
 History
 =======
 
+0.102.2 (2026-11-02)
+--------------------
+* Refactored session handling for site bound sessions
+
 0.102.1 (2026-09-18)
 --------------------
 * Replace deprecated setex with set

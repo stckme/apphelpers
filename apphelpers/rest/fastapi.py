@@ -3,10 +3,11 @@ from functools import wraps
 from typing import Annotated
 
 from converge import settings
-from fastapi import APIRouter, Depends, Header, Body, File, Query, Form
+from fastapi import APIRouter, Body, Depends, File, Form, Header, Query
 from fastapi.routing import APIRoute
 from starlette.requests import Request
 
+from apphelpers.async_sessions import SessionDBHandler
 from apphelpers.db import dbtransaction_ctx, peewee_enabled
 from apphelpers.errors.fastapi import (
     BaseError,
@@ -17,7 +18,6 @@ from apphelpers.errors.fastapi import (
 )
 from apphelpers.rest import endpoint as ep
 from apphelpers.rest.common import User, notify_honeybadger, phony
-from apphelpers.async_sessions import SessionDBHandler
 
 if settings.get("HONEYBADGER_API_KEY"):
     from honeybadger import Honeybadger
@@ -219,18 +219,18 @@ class QueryParams:
 
 
 class BodyParams:
-    str = Annotated[str, Body(embed=True)]
-    int = Annotated[int, Body(embed=True)]
-    file = Annotated[bytes, File()]
-    float = Annotated[float, Body(embed=True)]
-    bool = Annotated[bool, Body(embed=True)]
-    dict = Annotated[dict, Body(embed=True)]
-    bytes = Annotated[bytes, Body(embed=True)]
-    list_of_str = Annotated[list[str], Body(embed=True)]
-    list_of_int = Annotated[list[int], Body(embed=True)]
-    list_of_float = Annotated[list[float], Body(embed=True)]
-    list_of_bool = Annotated[list[bool], Body(embed=True)]
-    list_of_dict = Annotated[list[dict], Body(embed=True)]
+    str = Annotated[str | None, Body(embed=True)]
+    int = Annotated[int | None, Body(embed=True)]
+    file = Annotated[bytes | None, File()]
+    float = Annotated[float | None, Body(embed=True)]
+    bool = Annotated[bool | None, Body(embed=True)]
+    dict = Annotated[dict | None, Body(embed=True)]
+    bytes = Annotated[bytes | None, Body(embed=True)]
+    list_of_str = Annotated[list[str] | None, Body(embed=True)]
+    list_of_int = Annotated[list[int] | None, Body(embed=True)]
+    list_of_float = Annotated[list[float] | None, Body(embed=True)]
+    list_of_bool = Annotated[list[bool] | None, Body(embed=True)]
+    list_of_dict = Annotated[list[dict] | None, Body(embed=True)]
 
 
 class FormParams:

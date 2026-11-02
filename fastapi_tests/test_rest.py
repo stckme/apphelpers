@@ -121,6 +121,9 @@ class TestRest:
 
         url = base_url + "me/uid-unpacked"
 
+        resp = await client.post(url, json={}, headers=headers)
+        assert resp.json() is None
+
         data = {"uid": None}
         resp = await client.post(url, json=data, headers=headers)
         assert resp.json() == data["uid"]
