@@ -2,6 +2,10 @@
 History
 =======
 
+0.102.3 (2026-11-20)
+--------------------
+* Enabled support for hstore in Peewee database pool
+
 0.102.2 (2026-11-02)
 --------------------
 * Refactored session handling for site bound sessions

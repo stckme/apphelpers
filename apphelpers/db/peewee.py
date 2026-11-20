@@ -45,6 +45,8 @@ def create_pgdb_pool(
     port=None,
     sslmode=None,
     max_connections=32,
+    register_hstore=False,
+    stale_timeout=120,  # 2 minutes
     server_side_cursors=False,
     **options,
 ):
@@ -56,8 +58,8 @@ def create_pgdb_pool(
         port=port,
         sslmode=sslmode,
         max_connections=max_connections,
-        register_hstore=False,
-        stale_timeout=60 * 2,  # 2 minutes
+        register_hstore=register_hstore,
+        stale_timeout=stale_timeout,  # 2 minutes
         server_side_cursors=server_side_cursors,
         **options,
     )
