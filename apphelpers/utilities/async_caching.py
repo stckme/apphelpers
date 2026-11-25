@@ -31,10 +31,15 @@ class ReadOnlyAsyncCachedModel:
         return key
 
     @classmethod
-    async def _get_matched_keys(cls, data: dict) -> List[str]:
+    def _generate_key_pattern(cls, data: dict) -> str:
         pattern = cls.ns
         for _field in cls.key_fields:
             pattern += f":{data.get(_field, '*')}"
+        return pattern
+
+    @classmethod
+    async def _get_matched_keys(cls, data: dict) -> List[str]:
+        pattern = cls._generate_key_pattern(data)
         return await cls.connection.keys(pattern)
 
     @classmethod
@@ -72,9 +77,19 @@ class ReadOnlyAsyncCachedModel:
         return int(count) if count else 0, expiry
 
     @classmethod
-    async def count_matched_keys(cls, **data: Any) -> int:
-        keys = await cls._get_matched_keys(data)
-        return len(keys)
+    async def count_matched_keys(cls, in_batches=True, **data: Any) -> int:
+        if not in_batches:
+            keys = await cls._get_matched_keys(data)
+            return len(keys)
+
+        pattern = cls._generate_key_pattern(data)
+        count = 0
+        async for _ in cls.connection.scan_iter(match=pattern, count=1000):
+            count += 1
+            if count % 1000 == 0:
+                print(f"Counted {count} keys till now...")
+        print(f"Counted total {count} keys.")
+        return count
 
 
 class ReadWriteAsyncCachedModel(ReadOnlyAsyncCachedModel):
@@ -136,13 +151,75 @@ class ReadWriteAsyncCachedModel(ReadOnlyAsyncCachedModel):
         await cls.connection.delete(secondary_key)
 
     @classmethod
-    async def delete_all(cls, **data):
-        keys = await cls._get_matched_keys(data)
-        if keys:
-            await cls.connection.delete(*keys)
+    async def delete_all(cls, in_batches=True, **data):
+        if not in_batches:
+            keys = await cls._get_matched_keys(data)
+            if keys:
+                await cls.connection.delete(*keys)
+            return
+
+        pattern = cls._generate_key_pattern(data)
+        batch_size = 1000
+        count = 0
+
+        async with cls.connection.pipeline(transaction=False) as pipeline:
+            async for key in cls.connection.scan_iter(match=pattern, count=batch_size):
+                pipeline.delete(key)
+                count += 1
+
+                if count % batch_size == 0:
+                    await pipeline.execute()
+                    print(f"Deleted {count} keys till now...")
+
+            if count % batch_size != 0:
+                await pipeline.execute()
+            print(f"Deleted total {count} keys.")
 
     @classmethod
     async def delete_all_secondary_keys(cls):
         secondary_keys = await cls.connection.keys(cls._secondary_prefix_key(data={}))
         if secondary_keys:
             await cls.connection.delete(*secondary_keys)
+
+
+class ReadCachedHashAsyncModel(ReadWriteAsyncCachedModel):
+    @classmethod
+    async def get(cls, key, **data):
+        ns_key = cls._prefix_key(data)
+        return await cls.connection.hget(ns_key, key)
+
+    @classmethod
+    async def bulk_get(cls, keys, **data):
+        ns_key = cls._prefix_key(data)
+        return await cls.connection.hmget(ns_key, keys) if keys else []
+
+    @classmethod
+    async def get_all(cls, **data):
+        ns_key = cls._prefix_key(data)
+        return await cls.connection.hgetall(ns_key)
+
+
+class ReadWriteCachedHashAsyncModel(ReadCachedHashAsyncModel):
+    """
+    Read/Write cached model for hashes
+    """
+
+    @classmethod
+    async def add(cls, key, value, **data):
+        ns_key = cls._prefix_key(data)
+        await cls.connection.hset(ns_key, key=key, value=value)
+
+    @classmethod
+    async def bulk_add(cls, mapping, **data):
+        ns_key = cls._prefix_key(data)
+        await cls.connection.hset(ns_key, mapping=mapping)
+
+    @classmethod
+    async def remove(cls, key, **data):
+        ns_key = cls._prefix_key(data)
+        await cls.connection.hdel(ns_key, key)
+
+    @classmethod
+    async def bulk_remove(cls, keys, **data):
+        ns_key = cls._prefix_key(data)
+        await cls.connection.hdel(ns_key, *keys)
