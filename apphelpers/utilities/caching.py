@@ -31,10 +31,15 @@ class ReadOnlyCachedModel:
         return key
 
     @classmethod
-    def _get_matched_keys(cls, data: dict) -> List[str]:
+    def _generate_key_pattern(cls, data: dict) -> str:
         pattern = cls.ns
         for _field in cls.key_fields:
             pattern += f":{data.get(_field, '*')}"
+        return pattern
+
+    @classmethod
+    def _get_matched_keys(cls, data: dict) -> List[str]:
+        pattern = cls._generate_key_pattern(data)
         return cls.connection.keys(pattern)  # type: ignore
 
     @classmethod
@@ -72,9 +77,19 @@ class ReadOnlyCachedModel:
         return int(count) if count else 0
 
     @classmethod
-    def count_matched_keys(cls, **data: Any) -> int:
-        keys = cls._get_matched_keys(data)
-        return len(keys)
+    def count_matched_keys(cls, in_batches=True, batch_size=1000, **data: Any) -> int:
+        if not in_batches:
+            keys = cls._get_matched_keys(data)
+            return len(keys)
+
+        pattern = cls._generate_key_pattern(data)
+        count = 0
+        for _ in cls.connection.scan_iter(match=pattern, count=batch_size):
+            count += 1
+            if count % batch_size == 0:
+                print(f"Counted {count} keys till now...")
+        print(f"Counted total {count} keys.")
+        return count
 
 
 class ReadWriteCachedModel(ReadOnlyCachedModel):
@@ -136,13 +151,76 @@ class ReadWriteCachedModel(ReadOnlyCachedModel):
         cls.connection.delete(secondary_key)
 
     @classmethod
-    def delete_all(cls, **data):
-        keys = cls._get_matched_keys(data)
-        if keys:
-            cls.connection.delete(*keys)
+    def delete_all(cls, in_batches=True, batch_size=1000, **data):
+        if not in_batches:
+            keys = cls._get_matched_keys(data)
+            if keys:
+                cls.connection.delete(*keys)
+            return
+
+        pattern = cls._generate_key_pattern(data)
+        pipeline = cls.connection.pipeline(transaction=False)
+        count = 0
+
+        for key in cls.connection.scan_iter(match=pattern, count=batch_size):
+            pipeline.unlink(key)
+            count += 1
+
+            # Execute the batch once it hits the threshold
+            if count % batch_size == 0:
+                pipeline.execute()
+                print(f"Deleted {count} keys till now...")
+
+        # Execute any remaining keys left in the final partial batch
+        if count % batch_size != 0:
+            pipeline.execute()
+        print(f"Deleted total {count} keys.")
 
     @classmethod
     def delete_all_secondary_keys(cls):
         secondary_keys = cls.connection.keys(cls._secondary_prefix_key(data={}))
         if secondary_keys:
             cls.connection.delete(*secondary_keys)
+
+
+class ReadCachedHashModel(ReadWriteCachedModel):
+    @classmethod
+    def get(cls, key, **data):
+        ns_key = cls._prefix_key(data)
+        return cls.connection.hget(ns_key, key)
+
+    @classmethod
+    def bulk_get(cls, keys, **data):
+        ns_key = cls._prefix_key(data)
+        return cls.connection.hmget(ns_key, keys) if keys else []
+
+    @classmethod
+    def get_all(cls, **data):
+        ns_key = cls._prefix_key(data)
+        return cls.connection.hgetall(ns_key)
+
+
+class ReadWriteCachedHashModel(ReadCachedHashModel):
+    """
+    Read/Write cached model for hashes
+    """
+
+    @classmethod
+    def add(cls, key, value, **data):
+        ns_key = cls._prefix_key(data)
+        cls.connection.hset(ns_key, key=key, value=value)
+
+    @classmethod
+    def bulk_add(cls, mapping, **data):
+        ns_key = cls._prefix_key(data)
+        cls.connection.hset(ns_key, mapping=mapping)
+
+    @classmethod
+    def remove(cls, key, **data):
+        ns_key = cls._prefix_key(data)
+        cls.connection.hdel(ns_key, key)
+
+    @classmethod
+    def bulk_remove(cls, keys, **data):
+        ns_key = cls._prefix_key(data)
+        cls.connection.hdel(ns_key, *keys)

@@ -2,6 +2,10 @@
 History
 =======
 
+0.103.0 (2026-11-25)
+--------------------
+* Added support for SET operations in cached models
+
 0.102.3 (2026-11-20)
 --------------------
 * Enabled support for hstore in Peewee database pool

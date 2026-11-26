@@ -4,7 +4,6 @@ import json
 import requests
 from requests_oauthlib import OAuth2Session
 
-
 TOKEN_ISSUER = "https://www.facebook.com"
 GRAPH_API_URL = "https://graph.facebook.com"
 PUBLIC_KEYS_URL = "https://www.facebook.com/.well-known/oauth/openid/jwks"
