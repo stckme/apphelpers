@@ -77,16 +77,16 @@ class ReadOnlyAsyncCachedModel:
         return int(count) if count else 0, expiry
 
     @classmethod
-    async def count_matched_keys(cls, in_batches=True, **data: Any) -> int:
+    async def count_matched_keys(cls, in_batches=True, batch_size=1000, **data: Any) -> int:
         if not in_batches:
             keys = await cls._get_matched_keys(data)
             return len(keys)
 
         pattern = cls._generate_key_pattern(data)
         count = 0
-        async for _ in cls.connection.scan_iter(match=pattern, count=1000):
+        async for _ in cls.connection.scan_iter(match=pattern, count=batch_size):
             count += 1
-            if count % 1000 == 0:
+            if count % batch_size == 0:
                 print(f"Counted {count} keys till now...")
         print(f"Counted total {count} keys.")
         return count
@@ -151,7 +151,7 @@ class ReadWriteAsyncCachedModel(ReadOnlyAsyncCachedModel):
         await cls.connection.delete(secondary_key)
 
     @classmethod
-    async def delete_all(cls, in_batches=True, **data):
+    async def delete_all(cls, in_batches=True, batch_size=1000, **data):
         if not in_batches:
             keys = await cls._get_matched_keys(data)
             if keys:
@@ -159,7 +159,6 @@ class ReadWriteAsyncCachedModel(ReadOnlyAsyncCachedModel):
             return
 
         pattern = cls._generate_key_pattern(data)
-        batch_size = 1000
         count = 0
 
         async with cls.connection.pipeline(transaction=False) as pipeline:

@@ -78,16 +78,16 @@ class ReadOnlyCachedModel:
         return int(count) if count else 0
 
     @classmethod
-    def count_matched_keys(cls, in_batches=True, **data: Any) -> int:
+    def count_matched_keys(cls, in_batches=True, batch_size=1000, **data: Any) -> int:
         if not in_batches:
             keys = cls._get_matched_keys(data)
             return len(keys)
 
         pattern = cls._generate_key_pattern(data)
         count = 0
-        for _ in cls.connection.scan_iter(match=pattern, count=1000):
+        for _ in cls.connection.scan_iter(match=pattern, count=batch_size):
             count += 1
-            if count % 1000 == 0:
+            if count % batch_size == 0:
                 print(f"Counted {count} keys till now...")
         print(f"Counted total {count} keys.")
         return count
@@ -152,7 +152,7 @@ class ReadWriteCachedModel(ReadOnlyCachedModel):
         cls.connection.delete(secondary_key)
 
     @classmethod
-    def delete_all(cls, in_batches=True, **data):
+    def delete_all(cls, in_batches=True, batch_size=1000, **data):
         if not in_batches:
             keys = cls._get_matched_keys(data)
             if keys:
@@ -161,7 +161,6 @@ class ReadWriteCachedModel(ReadOnlyCachedModel):
         
         pattern = cls._generate_key_pattern(data)
         pipeline = cls.connection.pipeline(transaction=False)
-        batch_size = 1000
         count = 0
         
         for key in cls.connection.scan_iter(match=pattern, count=batch_size):

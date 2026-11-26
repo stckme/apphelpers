@@ -77,7 +77,7 @@ async def test_async_exists_count_expiry_and_matched_keys(redis_connection):
     assert count == 3
     assert expiry > 0
     assert await Product.count_matched_keys(in_batches=False) == 2
-    assert await Product.count_matched_keys(in_batches=True) == 2
+    assert await Product.count_matched_keys(in_batches=True, batch_size=1) == 2
 
 
 @pytest.mark.asyncio
@@ -123,7 +123,7 @@ async def test_async_delete_all_modes(redis_connection):
     assert not await Product.exists(id=2)
 
     await Product.create(id=3, name="watch")
-    await Product.delete_all(in_batches=True)
+    await Product.delete_all(in_batches=True, batch_size=1)
     assert not await Product.exists(id=3)
 
 
