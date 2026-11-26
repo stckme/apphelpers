@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from http import client
 import json
 from typing import Any, ClassVar, List, Optional
 
