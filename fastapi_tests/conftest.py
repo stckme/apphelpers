@@ -11,7 +11,6 @@ import settings
 from apphelpers.async_sessions import SessionDBHandler
 from fastapi_tests import service
 
-
 sessiondb_conn = dict(
     host=settings.SESSIONSDB_HOST,
     port=settings.SESSIONSDB_PORT,

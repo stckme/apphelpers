@@ -158,20 +158,20 @@ class ReadWriteCachedModel(ReadOnlyCachedModel):
             if keys:
                 cls.connection.delete(*keys)
             return
-        
+
         pattern = cls._generate_key_pattern(data)
         pipeline = cls.connection.pipeline(transaction=False)
         count = 0
-        
+
         for key in cls.connection.scan_iter(match=pattern, count=batch_size):
             pipeline.unlink(key)
             count += 1
-        
+
             # Execute the batch once it hits the threshold
             if count % batch_size == 0:
                 pipeline.execute()
                 print(f"Deleted {count} keys till now...")
-                
+
         # Execute any remaining keys left in the final partial batch
         if count % batch_size != 0:
             pipeline.execute()

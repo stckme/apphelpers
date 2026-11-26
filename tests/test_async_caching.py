@@ -49,7 +49,9 @@ async def test_async_key_patterns_and_json_values(redis_connection):
     assert Product._prefix_key({"id": 7}) == "test_async_cache_product:7"
     assert Product._generate_key_pattern({"id": 7}) == "test_async_cache_product:7"
     assert Product._generate_key_pattern({}) == "test_async_cache_product:*"
-    assert Product._secondary_prefix_key({"sku": "A"}) == "test_async_cache_product:_sk_:A"
+    assert (
+        Product._secondary_prefix_key({"sku": "A"}) == "test_async_cache_product:_sk_:A"
+    )
 
     assert await Product.create(id=7, name="phone") == "test_async_cache_product:7"
     assert await Product.get(id=7) == {"id": 7, "name": "phone"}
@@ -90,14 +92,19 @@ async def test_async_create_update_lookup_and_counter(redis_connection):
 
     assert await Product.create_lookup(id=2) == "test_async_cache_product:2"
     assert await redis_connection.get("test_async_cache_product:2") == "1"
-    assert await Product.create_counter(starting=5, id=3) == "test_async_cache_product:3"
+    assert (
+        await Product.create_counter(starting=5, id=3) == "test_async_cache_product:3"
+    )
     assert await redis_connection.get("test_async_cache_product:3") == "5"
 
 
 @pytest.mark.asyncio
 async def test_async_secondary_key_create_and_delete(redis_connection):
     await Product.add_secondary_key("test_async_cache_product:7", sku="A")
-    assert await redis_connection.get("test_async_cache_product:_sk_:A") == "test_async_cache_product:7"
+    assert (
+        await redis_connection.get("test_async_cache_product:_sk_:A")
+        == "test_async_cache_product:7"
+    )
     await Product.delete_secondary_key(sku="A")
     assert await redis_connection.get("test_async_cache_product:_sk_:A") is None
 

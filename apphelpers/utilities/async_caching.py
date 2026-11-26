@@ -77,7 +77,9 @@ class ReadOnlyAsyncCachedModel:
         return int(count) if count else 0, expiry
 
     @classmethod
-    async def count_matched_keys(cls, in_batches=True, batch_size=1000, **data: Any) -> int:
+    async def count_matched_keys(
+        cls, in_batches=True, batch_size=1000, **data: Any
+    ) -> int:
         if not in_batches:
             keys = await cls._get_matched_keys(data)
             return len(keys)

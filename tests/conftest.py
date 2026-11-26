@@ -10,7 +10,6 @@ import pytest
 import settings
 from apphelpers.async_sessions import SessionDBHandler
 
-
 sessiondb_conn = dict(
     host=settings.SESSIONSDB_HOST,
     port=settings.SESSIONSDB_PORT,
