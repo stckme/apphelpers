@@ -6,7 +6,10 @@ try:
     print("apphelpers: using Piccolo")
 
 except ImportError:
-    from apphelpers.db.peewee import dbtransaction_ctx  # noqa: F401, F403
+    from apphelpers.db.peewee import (  # noqa: F401, F403
+        dbtransaction,
+        dbtransaction_ctx,
+    )
     from apphelpers.db.async_peewee import (  # noqa: F401, F403
         dbtransaction_ctx as async_dbtransaction_ctx,
     )
