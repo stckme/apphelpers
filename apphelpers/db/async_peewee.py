@@ -23,27 +23,11 @@ def create_pgdb_pool(
     password=None,
     port=None,
     sslmode=None,
-    max_connections=32,
-    register_hstore=False,
-    stale_timeout=120,  # 2 minutes
-    server_side_cursors=False,
-    pool_size=None,
+    pool_size=32,
     pool_min_size=1,
     acquire_timeout=10,
     **options,
 ):
-    if register_hstore:
-        raise ValueError("register_hstore is not supported by AsyncPostgresqlDatabase")
-    if stale_timeout != 120:
-        raise ValueError("stale_timeout is not supported by AsyncPostgresqlDatabase")
-    if server_side_cursors:
-        raise ValueError(
-            "Use db.iterate() for server-side cursors with AsyncPostgresqlDatabase"
-        )
-    if pool_size is None:
-        pool_size = max_connections
-    elif max_connections != 32:
-        raise ValueError("Specify either pool_size or max_connections, not both")
     if sslmode is not None:
         if "ssl" in options:
             raise ValueError("Specify either sslmode or ssl, not both")
