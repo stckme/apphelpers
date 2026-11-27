@@ -2,6 +2,10 @@
 History
 =======
 
+0.104.0 (2026-11-27)
+--------------------
+* Added support for Async Peewee
+
 0.103.0 (2026-11-25)
 --------------------
 * Added support for SET operations in cached models

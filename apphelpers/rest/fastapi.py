@@ -8,7 +8,7 @@ from fastapi.routing import APIRoute
 from starlette.requests import Request
 
 from apphelpers.async_sessions import SessionDBHandler
-from apphelpers.db import dbtransaction_ctx, peewee_enabled
+from apphelpers.db import async_dbtransaction_ctx, dbtransaction_ctx, peewee_enabled
 from apphelpers.errors.fastapi import (
     BaseError,
     HTTP401Unauthorized,
@@ -134,6 +134,33 @@ if peewee_enabled:
                 @wraps(f)
                 async def sync_wrapper(*ar, **kw):
                     with dbtransaction_ctx(db):
+                        return f(*ar, **kw)
+
+                return sync_wrapper
+
+        return wrapper
+
+    def async_dbtransaction(db):
+        """
+        wrapper that make db transactions automic
+        note db connections are used only when it is needed (hence there is no
+        usual connection open/close)
+        """
+
+        def wrapper(f):
+            if inspect.iscoroutinefunction(f):
+
+                @wraps(f)
+                async def async_wrapper(*ar, **kw):
+                    with async_dbtransaction_ctx(db):
+                        return await f(*ar, **kw)
+
+                return async_wrapper
+            else:
+
+                @wraps(f)
+                async def sync_wrapper(*ar, **kw):
+                    with async_dbtransaction_ctx(db):
                         return f(*ar, **kw)
 
                 return sync_wrapper
@@ -495,7 +522,11 @@ class APIFactory:
 
     def setup_db_transaction(self, db):
         if peewee_enabled:
-            self.db_tr_wrapper = dbtransaction(db)
+            if str(type(db).__name__) == "AsyncPostgresqlDatabase":
+                self.db_tr_wrapper = async_dbtransaction(db)
+            else:
+                self.db_tr_wrapper = dbtransaction(db)
+
         else:
             # For piccolo, dbtransaction is handled as dependency,
             # we need separate routers with dbtransaction dependency
