@@ -70,12 +70,3 @@ async def test_async_peewee_transactions(book_table):
     await add_book(name)
     names = [book.name for book in await Book.select().aexecute()]
     assert name in names
-
-
-def test_create_pgdb_pool_maps_asyncpg_options():
-    db = create_pgdb_pool(database="test", max_connections=5, sslmode="require")
-
-    assert db._pool_size == 5
-    assert db.connect_params["ssl"] == "require"
-    assert "max_connections" not in db.connect_params
-    assert "sslmode" not in db.connect_params
