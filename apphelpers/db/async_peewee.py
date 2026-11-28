@@ -98,6 +98,10 @@ def dbtransaction(db):
 
 
 def dbc(db):
+    """
+    Returns a string representing the current state of the database connection pool.
+    Format: [pid]: in_use:pool_size
+    """
     pid = os.getpid()
     states = getattr(getattr(db, "_state", None), "_states", {})
     in_use = sum(
